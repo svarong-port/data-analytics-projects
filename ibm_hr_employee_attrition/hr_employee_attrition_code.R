@@ -355,7 +355,15 @@ attrition_by_overtime |>
   
   ## Adjust x scale
   scale_x_discrete()
-  
+
+
+# --------------------------------------
+
+
+# Q3. Salary vs. Attrition: The Pay Gap Dilemma
+# - Do employees who earn less tend to leave more frequently?
+# - What’s the average monthly income of those who stay vs. those who leave?
+# - Are we paying our high-performing employees enough to retain them?
 
 
 
@@ -363,3 +371,60 @@ attrition_by_overtime |>
 
 
 
+
+# --------------------------------------
+
+
+# Q4. Age & Experience: Who is Most at Risk?
+# - Are younger employees leaving at a higher rate than older employees?
+# - How does total working experience influence attrition?
+
+
+
+
+
+
+# --------------------------------------
+
+
+# Q5. Promotion & Career Growth Opportunities
+# - We want to ensure that employees see long-term career growth in our company.
+# - How does the number of promotions (YearsSinceLastPromotion) relate to attrition?
+# - Are employees with fewer promotions more likely to leave?
+
+
+
+
+
+
+# --------------------------------------
+
+
+# Q6. Job Satisfaction vs. Attrition
+# - How does job satisfaction affect attrition rates?
+# - Are employees with lower satisfaction scores leaving more often?
+
+
+
+
+
+
+
+# --------------------------------------
+
+
+# Q7. Remote Work vs. Travel Frequency
+# - With more employees requesting remote work, does business travel influence attrition?
+# - Are those who travel frequently more likely to leave?
+
+
+
+
+
+
+# --------------------------------------
+
+
+# Q8. High Performers & Attrition
+# - Are we losing our top-performing employees?
+# - How does Performance Rating relate to attrition?
