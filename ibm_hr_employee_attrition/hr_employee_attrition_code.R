@@ -228,13 +228,13 @@ attrition_risk_by_dep |>
   ### Call bar plot
   geom_col() +
   
-  ### Adjust theme to light
+  ## Adjust theme to minimal
   theme_minimal() +
   
   ### Add text elements
-  labs(title = "Attrition Ratio by Department",
+  labs(title = "Attrition Risk by Department",
        x = "Departments",
-       y = "Attrition Ratio (%)",
+       y = "Attrition Risk (%)",
        fill = "Departments") +
   
   ### Adjust x scale
@@ -280,13 +280,13 @@ attrition_risk_by_job |>
   ### Call bar plot
   geom_col() +
   
-  ### Adjust theme to light
+  ## Adjust theme to minimal
   theme_minimal() +
   
   ### Add text elements
-  labs(title = "Attrition Ratio by Job Role",
+  labs(title = "Attrition Risk by Job Role",
        x = "Job Roles",
-       y = "Attrition Ratio (%)",
+       y = "Attrition Risk (%)",
        fill = "Job Role") +
   
   ### Customise text elements
@@ -297,18 +297,65 @@ attrition_risk_by_job |>
   scale_x_discrete()
 
 
+# --------------------------------------
 
 
+# Q2. Work-Life Balance & Overtime
+# - Employees have expressed concerns about work-life balance.
+# - How does overtime impact attrition?
+# - Are employees who work overtime more likely to leave?
 
 
+## Create a matrix for overtime vs attrition
+table(overtime = hr_cleaned$OverTime,
+      attrition = hr_cleaned$Attrition)
 
 
+## Count attrition by overtime
+attrition_by_overtime <- hr_cleaned |>
+  
+  ## Group by overtime
+  group_by(OverTime) |>
+  
+  ## Count attrition
+  summarise(Count = sum(Attrition == "Yes"),
+            Total = n(),
+            Risk = mean(Attrition == "Yes") * 100) |>
+  
+  ## Ungroup
+  ungroup() |>
+  
+  ## Arrange by attrition count
+  arrange(desc(Risk))
 
 
+## Print the results
+attrition_by_overtime
 
 
-
-
+## Visualise the results
+attrition_by_overtime |>
+  
+  ## Aesthetic mapping
+  ggplot(aes(x = OverTime,
+             y = Risk,
+             fill = OverTime)) +
+  
+  ### Call on bar plot
+  geom_col() +
+  
+  ## Adjust theme to minimal
+  theme_minimal() +
+  
+  ## Add title, labels, legend
+  labs(title = "Attrition Risk by Overtime Type",
+       x = "Overtime Type",
+       y = "Attrition Risk (%)",
+       fill = "Overtime Type") +
+  
+  ## Adjust x scale
+  scale_x_discrete()
+  
 
 
 
