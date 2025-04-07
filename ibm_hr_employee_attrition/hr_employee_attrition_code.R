@@ -588,6 +588,24 @@ rf_predictions <- collect_predictions(rf_wkl_fit)
 rf_predictions
 
 
+# # A tibble: 295 × 7
+# .pred_class .pred_Yes .pred_No id     .row Attrition
+# <fct>           <dbl>    <dbl> <chr> <int> <fct>    
+# 1 No             0.0674    0.933 trai…    10 No       
+# 2 No             0.127     0.873 trai…    11 No       
+# 3 Yes            0.513     0.487 trai…    18 No       
+# 4 No             0.149     0.851 trai…    29 No       
+# 5 No             0.101     0.899 trai…    40 No       
+# 6 No             0.343     0.657 trai…    42 No       
+# 7 No             0.0981    0.902 trai…    45 No       
+# 8 No             0.119     0.881 trai…    47 No       
+# 9 No             0.165     0.835 trai…    48 No       
+# 10 No             0.232     0.768 trai…    62 No       
+# ℹ 285 more rows
+# ℹ 1 more variable: .config <chr>
+# ℹ Use `print(n = ...)` to see more rows
+
+
 ## Create a confusion matrix
 rf_conf_mat <- conf_mat(rf_predictions,
                         truth = Attrition,
@@ -596,12 +614,25 @@ rf_conf_mat <- conf_mat(rf_predictions,
 ## Print the confusion matrix
 rf_conf_mat
 
+#           Truth
+# Prediction Yes  No
+#       Yes   10   3
+#       No    38 244
+
 
 ## Collect metrics
 rf_perf_results <- collect_metrics(rf_wkl_fit)
 
 ## Print metrics
 rf_perf_results
+
+# A tibble: 4 × 4
+# .metric   .estimator .estimate .config             
+# <chr>     <chr>          <dbl> <chr>               
+# 1 accuracy  binary      0.861 Preprocessor1_Model1
+# 2 recall    binary      0.208 Preprocessor1_Model1
+# 3 precision binary      0.769 Preprocessor1_Model1
+# 4 roc_auc   binary      0.814 Preprocessor1_Model1
 
 
 ## Plot ROC curve
@@ -649,9 +680,9 @@ for (predictor in important_predictors) {
 
 
 ## Comments:
-## - We can predict attrition with 85% accuracy
+## - We can predict attrition with 86% accuracy
 ## - The model shows a balance between true positive and false positive rates as ROC AUC is 81%
-## - The model, however, falters with recall of 21%
+## - The model, however, falters with recall of just almost 21%
 ## - This is likely due to class imbalance in attrition as around 84% is "No" and 16% "Yes"
 ## - The model improvement will likely benefit from future with more positive attrition instances
 
