@@ -313,7 +313,7 @@ cohen.d(EnvironmentSatisfaction ~ Attrition,
 
 # EDA, part 3
 
-# Explore attritions patterns by department and job role
+# Explore attrition patterns by department and job role
 
 ## Attrition by department
 hr_cleaned |>
@@ -466,6 +466,63 @@ hr_cleaned |>
 
 # ------------------------------------------------------
 
+# EDA, part 4
+
+# Explore the attrition pattens by gender and age
+
+## Gender vs attrition
+
+hr_cleaned |>
+  
+  ### Group by gender and attritiom
+  group_by(Gender, Attrition) |>
+  
+  ### Count the number of observations
+  summarise(Count = n(), .groups = "drop") |>
+  
+  ### Group by gender
+  mutate(Percent = Count / sum(Count) * 100) |>
+  
+  ### Ungroup
+  ungroup() |>
+  
+  ### Aesthetic mapping
+  ggplot(aes(x = Attrition,
+             y = Percent,
+             fill = Gender)) +
+  
+  ### Call on bar plot
+  geom_col() +
+  
+  ## Add percent text
+  geom_text(aes(label = paste(round(Percent, 0), "%")),
+            vjust = -0.5,
+            size = 3) +
+  
+  ### Add text elements
+  labs(title = "Attrition by Gender",
+       x = "Attrition",
+       y = "Attrition Percentage",
+       fill = "Gender") +
+  
+  ### Adjust x scale
+  scale_x_discrete() +
+  
+  ### Adjust theme to classic for easy viewing
+  theme_classic()
+
+
+## Gender vs age
+
+hr_cleaned |>
+  
+  ### Aesthetic mapping
+  
+
+
+
+# ------------------------------------------------------
+
 
 # Predictive Modelling
 
@@ -473,7 +530,6 @@ hr_cleaned |>
 # - Can we predict attrition?
 # - If so, with how much accuracy?
 # - What are the five most important predictors in the model?
-
 
 ## Prepare the dataset for modelling
 
@@ -509,11 +565,11 @@ rf_tune_model <- rand_forest(mtry = tune(),
                              min_n = tune(),
                              trees = 500) |>
   
-  #### Set engine
+  ### Set engine
   set_engine("ranger",
              importance = "permutation") |>
   
-  #### Set mode
+  ### Set mode
   set_mode("classification")
 
 
@@ -642,10 +698,125 @@ roc_curve(rf_predictions,
   autoplot()
 
 
+# ------------------------------------------------------
+
+
+# Refit the model with upsampling step added
+
+## Create a model recipe
+rf_rec_1 <- recipe(Attrition ~ .,
+                   data = hr_train) |>
+  
+  ### Remove near-zero variance predictors
+  step_nzv(all_numeric_predictors()) |>
+  
+  ### handle multicollinearity
+  step_corr(all_numeric_predictors(),
+            threshold = 0.7) |>
+  
+  ### Dummy encode categorical predictors
+  step_dummy(all_nominal_predictors()) |>
+  
+  ### Normalise numeric predictors
+  step_normalize(all_numeric_predictors()) |>
+  
+  ### Oversample the outcome
+  step_upsample(Attrition)
+
+
+## Bundle model and recipe
+rf_wfl_1 <- workflow() |>
+  
+  ### Add model
+  add_model(rf_tune_model) |>
+  
+  ### Add recipe
+  add_recipe(rf_rec_1)
+
+
+## Define cross-validation
+rf_cv <- vfold_cv(hr_train,
+                  v = 10,
+                  strata = Attrition)
+
+## Define tune grid
+rf_grid <- grid_random(mtry(range = c(5, 10)),
+                       min_n(range = c(1, 25)),
+                       size = 30)
+
+## Define tune metrics
+rf_metrics <- metric_set(accuracy,
+                         recall,
+                         precision,
+                         roc_auc)
+
+## Tune the model
+system.time({rf_tune_1 <- tune_grid(rf_wfl_1,
+                                    resamples = rf_cv,
+                                    grid = rf_grid,
+                                    metrics = rf_metrics)})
+
+## Select the best hyperparametres
+rf_best_hp_1 <- select_best(rf_tune_1,
+                            metric = "recall")
+
+## Apply the best hyperparametres
+rf_wfl_final_1 <- finalize_workflow(rf_wfl,
+                                  rf_best_hp_1)
+
+## Fit the model
+rf_wkl_fit_1 <- last_fit(rf_wfl_final_1,
+                         split = hr_split,
+                         metrics = rf_metrics)
+
+
+## Collect predictions
+rf_predictions_1 <- collect_predictions(rf_wkl_fit_1)
+
+## Print predictions
+rf_predictions_1
+
+
+## Create a confusion matrix
+rf_conf_mat_1 <- conf_mat(rf_predictions_1,
+                        truth = Attrition,
+                        estimate = .pred_class)
+
+## Print the confusion matrix
+rf_conf_mat_1
+
+#           Truth
+# Prediction Yes  No
+#        Yes  21  14
+#        No   27 233
+
+
+## Collect metrics
+rf_perf_results_1 <- collect_metrics(rf_wkl_fit_1)
+
+## Print metrics
+rf_perf_results_1
+
+# # A tibble: 4 × 4
+# .metric   .estimator .estimate .config             
+# <chr>     <chr>          <dbl> <chr>               
+# 1 accuracy  binary       0.861 Preprocessor1_Model1
+# 2 recall    binary       0.438 Preprocessor1_Model1
+# 3 precision binary       0.6   Preprocessor1_Model1
+# 4 roc_auc   binary       0.809 Preprocessor1_Model1
+
+
+## Plot ROC curve
+roc_curve(rf_predictions_1,
+          truth = Attrition,
+          .pred_Yes) |> 
+  autoplot()
+
+
 ## Get level of importance
 
 ### Get final fit model
-rf_final_model <- rf_wkl_fit |>
+rf_final_model_1 <- rf_wkl_fit_1 |>
   
   ### Extract workflow object
   extract_workflow() |>
@@ -654,16 +825,16 @@ rf_final_model <- rf_wkl_fit |>
   extract_fit_parsnip()
 
 ### Get levels of importance
-vip(rf_final_model, num_features = 10)
+vip(rf_final_model_1, num_features = 10)
 
 
 ## Get the directions of the relationships
 
 ### Create a vector of 5 most important predictors
-important_predictors <- c("OverTime_Yes",
-                          "MonthlyIncome",
-                          "YearsWithCurrManager",
+important_predictors <- c("MonthlyIncome",
+                          "OverTime_Yes",
                           "Age",
+                          "YearsWithCurrManager",
                           "JobSatisfaction")
 
 ### For-loop through the vector
@@ -673,33 +844,31 @@ for (predictor in important_predictors) {
   pd <- partial(rf_final_model$fit,
                 pred.var = predictor,
                 train = juice(prep(rf_rec)))
-    
+  
   #### Print plot
   print(autoplot(pd) + ggtitle(predictor))
 }
 
 
+# ------------------------------------------------------
+
+
 ## Comments:
 ## - We can predict attrition with 86% accuracy
-## - The model shows a balance between true positive and false positive rates as ROC AUC is 81%
-## - The model, however, falters with recall of just almost 21%
+## - The model shows a balance between true positive and false positive rates as ROC AUC is almost 81%
+## - The model, however, falters with recall of just almost 44%
 ## - This is likely due to class imbalance in attrition as around 84% is "No" and 16% "Yes"
 ## - The model improvement will likely benefit from future with more positive attrition instances
 
 ## Based on the current model, the five most important predictors are:
-## (1) Overtime (yes)
-## (2) Monthly income
-## (3) Years with current manager
-## (4) Age
+## (1) Monthly income
+## (2) Overtime (yes)
+## (3) Age
+## (4) Years with current manager
 ## (5) Job satisfaction
 
-## Predictor 1. Overtime (yes)
-## Relationship with attrition: linear (positive)
-## - This is not surprising given that overtime may be associated with workload or lead employees to perceive their work as more demanding.
-## - This in turn may lead to more work-related stress, which make employees more likely to leave the company.
 
-
-## Predictor 2. Monthly income
+## Predictor 1. Monthly income
 ## Relationship with attrition: resembling U shape
 ## - This predictor is also not surprising.
 ## - Being employed is a transactional relationship.
@@ -707,18 +876,24 @@ for (predictor in important_predictors) {
 ## - Additionally, at a certain point, being paid more may lead employees to seek new opportunities where they may be able to earn even more.
 
 
-## Predictor 3. Years with current managers
-## Relationship with attrition: resembling L shape
-## - There are two ways to interpret this.
-## - First, this predictor may not be the cause but a correlate of attrition as people leave early are likely to have fewer years with their managers.
-## - Second, years with current managers may reflect stagnation in the employees' career, which may in turn motivate employees to seek career growth elsewhere.
+## Predictor 2. Overtime (yes)
+## Relationship with attrition: linear (positive)
+## - This is not surprising given that overtime may be associated with workload or lead employees to perceive their work as more demanding.
+## - This in turn may lead to more work-related stress, which make employees more likely to leave the company.
 
 
-## Predict 4. Age
+## Predict 3. Age
 ## Relationship with attrition: resembling U shape
 ## - The relationship between this predictor and attrition suggests that younger people are more likely to leave.
 ## - As they age, they become less likely to leave, up to a certain point.
 ## - After that, they become more likely to leave but not as likely as their younger counterparts.
+
+
+## Predictor 4. Years with current managers
+## Relationship with attrition: resembling L shape
+## - There are two ways to interpret this.
+## - First, this predictor may not be the cause but a correlate of attrition as people leave early are likely to have fewer years with their managers.
+## - Second, years with current managers may reflect stagnation in the employees' career, which may in turn motivate employees to seek career growth elsewhere.
 
 
 ## Predict 5. Job satisfaction
@@ -726,25 +901,24 @@ for (predictor in important_predictors) {
 ## - This predictor is intuitive in that people who are less satified with their jobs are more likely to leave the company.
 
 
-## Recommendations based on the models
+## Recommendations based on the model
 
-## Predictor 1. Overtime (yes)
+## Predictor 1. Monthly income
+## Recommendation 1: Consider salary structure by balancing the incentive with workload. This may be done in conjunction with recommendation 1 from predictor 1.
+
+## Predictor 2. Overtime (yes)
 ## Recommendation 1: Manage workload by reviewing the company overall workload and reallocating certain responsibilities and cutting down on non-essential tasks to relieve the employees of unnecessary workload.
 ## Recommendation 2: Implement new technology or work procedures which may facilitate work process, allowing employees to accomplish the same amount of work in less time. This is a win-win situation where the company enjoy the same level of productivity while the employees become happier.
 
 
-## Predictor 2. Monthly income
-## Recommendation 1: Consider salary structure by balancing the incentive with workload. This may be done in conjunction with recommendation 1 from predictor 1.
-
-
-## Predictor 3. Years with current managers
-## Recommendation 1: Validate whether years with current managers are predictive of attrition. This may be done by selectively interviewing employees or reviewing additional employee data.
-## Recommendation 2: If years with current managers reflect , Communicate clear career path to the employees to ensure that they are aware of the opportunities for professional growth.
-
-
-## Predictor 4. Age
+## Predictor 3. Age
 ## Recommendation 1: The company may investigate whether the company culture is a good fit the younger hires, given that younger employees are more likely to leave the company. If the culture is a contributor, the company may implement a plan to adjust certain aspects of the company culture to be attractive to younger hires.
 ## Recommendation 2: Regarding older employees, the company may also explore what factors are driving these employees away. This may be due to culture or other job or workplace characteristics such as career path or promotion.
+
+
+## Predictor 4. Years with current managers
+## Recommendation 1: Validate whether years with current managers are predictive of attrition. This may be done by selectively interviewing employees or reviewing additional employee data.
+## Recommendation 2: If years with current managers reflect , Communicate clear career path to the employees to ensure that they are aware of the opportunities for professional growth.
 
 
 ## Predictor 5. Job satisfaction
