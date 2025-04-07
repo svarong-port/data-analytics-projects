@@ -492,10 +492,11 @@ hr_cleaned |>
              fill = Gender)) +
   
   ### Call on bar plot
-  geom_col() +
+  geom_col(position = "dodge") +
   
   ## Add percent text
   geom_text(aes(label = paste(round(Percent, 0), "%")),
+            position = position_dodge(width = 0.9),
             vjust = -0.5,
             size = 3) +
   
@@ -511,14 +512,38 @@ hr_cleaned |>
   ### Adjust theme to classic for easy viewing
   theme_classic()
 
+## Comments:
+## - In both attrition conditions, there were more males than females
+## - Among both gender, there were more people leaving than staying
+## - As the attrition patterns are similar across gender, this variable may contribute very weakly to attrition
 
-## Gender vs age
+
+## Age vs attrition
 
 hr_cleaned |>
   
   ### Aesthetic mapping
+  ggplot(aes(x = Age,
+             fill = Attrition)) +
   
+  ### Call on density plot
+  geom_density(alpha = 0.5) +
+  
+  ### Add text elements
+  labs(title = "Attrition by Age",
+       x = "Age (Years)",
+       y = "Employee Count",
+       fill = "Attrition Status") +
+  
+  ### Adjust theme to classic for easy viewing
+  theme_classic()
 
+## Comments:
+## - Age distributions are similar across attrition conditions
+## - Age distribution for those who stayed is more normally distributed
+## - The peaks are close together
+## - As the peak for those who left leans more towards the left, people who left to be younger
+## - This suggests that age may be a worthwhile predictor of attrition
 
 
 # ------------------------------------------------------
