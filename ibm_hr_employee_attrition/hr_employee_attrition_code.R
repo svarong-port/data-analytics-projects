@@ -627,11 +627,21 @@ rf_wfl <- workflow() |>
 
 
 ## Define cross-validation
+
+### Set seed for reproducibility
+set.seed(2012)
+
+### Set CV
 rf_cv <- vfold_cv(hr_train,
                   v = 10,
                   strata = Attrition)
 
 ## Define tune grid
+
+### Set seed for reproducibility
+set.seed(2012)
+
+### Define the grid
 rf_grid <- grid_random(mtry(range = c(5, 10)),
                        min_n(range = c(1, 25)),
                        size = 30)
@@ -643,6 +653,11 @@ rf_metrics <- metric_set(accuracy,
                          roc_auc)
 
 ## Tune the model
+
+### Set seed for reproducibility
+set.seed(2012)
+
+### Tune
 system.time({rf_tune <- tune_grid(rf_wfl,
                                   resamples = rf_cv,
                                   grid = rf_grid,
@@ -668,20 +683,19 @@ rf_predictions <- collect_predictions(rf_wkl_fit)
 ## Print predictions
 rf_predictions
 
-
 # # A tibble: 295 × 7
-# .pred_class .pred_Yes .pred_No id     .row Attrition
-# <fct>           <dbl>    <dbl> <chr> <int> <fct>    
-# 1 No             0.0674    0.933 trai…    10 No       
-# 2 No             0.127     0.873 trai…    11 No       
-# 3 Yes            0.513     0.487 trai…    18 No       
-# 4 No             0.149     0.851 trai…    29 No       
-# 5 No             0.101     0.899 trai…    40 No       
-# 6 No             0.343     0.657 trai…    42 No       
-# 7 No             0.0981    0.902 trai…    45 No       
-# 8 No             0.119     0.881 trai…    47 No       
-# 9 No             0.165     0.835 trai…    48 No       
-# 10 No             0.232     0.768 trai…    62 No       
+#   .pred_class .pred_Yes .pred_No id           .row Attrition
+#   <fct>           <dbl>    <dbl> <chr>       <int> <fct> 
+#  1 No              0.058    0.942 train/test…    10 No       
+#  2 No              0.138    0.862 train/test…    11 No       
+#  3 No              0.474    0.526 train/test…    18 No       
+#  4 No              0.136    0.864 train/test…    29 No       
+#  5 No              0.08     0.92  train/test…    40 No       
+#  6 No              0.29     0.71  train/test…    42 No       
+#  7 No              0.108    0.892 train/test…    45 No       
+#  8 No              0.116    0.884 train/test…    47 No       
+#  9 No              0.158    0.842 train/test…    48 No       
+# 10 No              0.198    0.802 train/test…    62 No 
 # ℹ 285 more rows
 # ℹ 1 more variable: .config <chr>
 # ℹ Use `print(n = ...)` to see more rows
@@ -697,8 +711,8 @@ rf_conf_mat
 
 #           Truth
 # Prediction Yes  No
-#       Yes   10   3
-#       No    38 244
+#       Yes    9   2
+#       No    39 245
 
 
 ## Collect metrics
@@ -708,12 +722,12 @@ rf_perf_results <- collect_metrics(rf_wkl_fit)
 rf_perf_results
 
 # A tibble: 4 × 4
-# .metric   .estimator .estimate .config             
-# <chr>     <chr>          <dbl> <chr>               
-# 1 accuracy  binary      0.861 Preprocessor1_Model1
-# 2 recall    binary      0.208 Preprocessor1_Model1
-# 3 precision binary      0.769 Preprocessor1_Model1
-# 4 roc_auc   binary      0.814 Preprocessor1_Model1
+#   .metric   .estimator .estimate .config             
+#   <chr>     <chr>          <dbl> <chr>               
+# 1 accuracy  binary         0.861 Preprocessor1_Model1
+# 2 recall    binary         0.188 Preprocessor1_Model1
+# 3 precision binary         0.818 Preprocessor1_Model1
+# 4 roc_auc   binary         0.811 Preprocessor1_Model1
 
 
 ## Plot ROC curve
@@ -729,6 +743,11 @@ roc_curve(rf_predictions,
 # Refit the model with upsampling step added
 
 ## Create a model recipe
+
+### Set seed for reproducibility
+set.seed(9000)
+
+### Create the recipe
 rf_rec_1 <- recipe(Attrition ~ .,
                    data = hr_train) |>
   
@@ -760,22 +779,31 @@ rf_wfl_1 <- workflow() |>
 
 
 ## Define cross-validation
+
+### Set seed for reproducibility
+set.seed(9000)
+
+### Set CV
 rf_cv <- vfold_cv(hr_train,
                   v = 10,
                   strata = Attrition)
 
 ## Define tune grid
+
+### Set seed for reproducibility
+set.seed(9000)
+
+### Define the grid
 rf_grid <- grid_random(mtry(range = c(5, 10)),
                        min_n(range = c(1, 25)),
                        size = 30)
 
-## Define tune metrics
-rf_metrics <- metric_set(accuracy,
-                         recall,
-                         precision,
-                         roc_auc)
-
 ## Tune the model
+
+### Set seed for reproducibility
+set.seed(9000)
+
+### Tune
 system.time({rf_tune_1 <- tune_grid(rf_wfl_1,
                                     resamples = rf_cv,
                                     grid = rf_grid,
