@@ -368,6 +368,7 @@ hr_cleaned |>
   ### Ungroup
   ungroup() |>
   
+  ### Reorder job role levels
   mutate(JobRole = fct_reorder(JobRole,
                                AttritionRate,
                                .desc = TRUE)) |>
@@ -418,9 +419,47 @@ hr_cleaned |>
   #### Compute attrition rate
   summarise(AttritionRate = mean(Attrition == "Yes") * 100) |>
   
-  #### 
+  #### Ungroup
+  ungroup() |>
+  
+  ### Reorder job levels
+  mutate(JobLevel = fct_reorder(JobLevel,
+                               AttritionRate,
+                               .desc = TRUE)) |>
+  
+  ### Aesthetic mapping
+  ggplot(aes(x = JobLevel,
+             y = AttritionRate,
+             fill = JobLevel)) +
+  
+  ### Call on bar plot
+  geom_col() +
+  
+  ## Add percent text
+  geom_text(aes(label = paste(round(AttritionRate, 0), "%")),
+            vjust = -0.5,
+            size = 3) +
+  
+  ### Add text elements
+  labs(title = "Attrition Rate by Job Level",
+       x = "Job Levels",
+       y = "Attrition Rate (%)",
+       fill = "Job Levels") +
+  
+  ### Adjust x scale
+  scale_x_discrete() +
+  
+  ### Adjust theme to classic for easy viewing
+  theme_classic()
 
+## Comments:
+## - Job level 1 has the highest attrition percentage, while job levels 4 and 5 have the lowest attrition rate
+## - This supports the earlier notion that people in lower job levels are more likely to leave the company
 
 
 # ------------------------------------------------------
 
+
+# EDA, part 4
+
+## Explore attrition in relation to gender and age
