@@ -812,8 +812,8 @@ rf_conf_mat_1
 
 #           Truth
 # Prediction Yes  No
-#        Yes  21  14
-#        No   27 233
+#        Yes  20  14
+#        No   28 233
 
 
 ## Collect metrics
@@ -825,10 +825,10 @@ rf_perf_results_1
 # # A tibble: 4 × 4
 # .metric   .estimator .estimate .config             
 # <chr>     <chr>          <dbl> <chr>               
-# 1 accuracy  binary       0.861 Preprocessor1_Model1
-# 2 recall    binary       0.438 Preprocessor1_Model1
-# 3 precision binary       0.6   Preprocessor1_Model1
-# 4 roc_auc   binary       0.809 Preprocessor1_Model1
+# 1 accuracy  binary       0.858 Preprocessor1_Model1
+# 2 recall    binary       0.417 Preprocessor1_Model1
+# 3 precision binary       0.588 Preprocessor1_Model1
+# 4 roc_auc   binary       0.810 Preprocessor1_Model1
 
 
 ## Plot ROC curve
