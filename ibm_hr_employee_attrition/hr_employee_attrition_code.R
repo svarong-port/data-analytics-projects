@@ -879,9 +879,9 @@ for (predictor in important_predictors) {
 
 
 ## Comments:
-## - We can predict attrition with 86% accuracy
-## - The model shows a balance between true positive and false positive rates as ROC AUC is almost 81%
-## - The model, however, falters with recall of just almost 44%
+## - We can predict attrition with around 85% accuracy
+## - The model shows a balance between true positive and false positive rates as ROC AUC is 81%
+## - The model, however, falters with recall of just almost 42%
 ## - This is likely due to class imbalance in attrition as around 84% is "No" and 16% "Yes"
 ## - The model improvement will likely benefit from future with more positive attrition instances
 
