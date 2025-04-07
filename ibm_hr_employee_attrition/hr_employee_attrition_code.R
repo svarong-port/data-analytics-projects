@@ -1,64 +1,34 @@
-# HR Employee Attrition Analysis
+# HR Employee Attrition Analytics
 
 # Author: Shinin Varongchayakul
-# Date: 05 Apr 2025
+# Date: 07 Apr 2025
 
 # Dataset Info
 # Name: IBM HR Analytics Employee Attrition & Performance
 # Source: https://www.kaggle.com/datasets/pavansubhasht/ibm-hr-analytics-attrition-dataset
 
 
-# --------------------------------------
-
-
-# Busines Questions
-
-# Q1. Attrition Risk by Department & Role
-# - We’ve been noticing an increase in employee turnover.
-# - Which departments and job roles have the highest attrition rates?
-
-# Q2. Work-Life Balance & Overtime
-# - Employees have expressed concerns about work-life balance.
-# - How does overtime impact attrition?
-# - Are employees who work overtime more likely to leave?
-
-# Q3. Salary vs. Attrition: The Pay Gap Dilemma
-# - Do employees who earn less tend to leave more frequently?
-# - What’s the average monthly income of those who stay vs. those who leave?
-# - Are we paying our high-performing employees enough to retain them?
-
-# Q4. Age & Experience: Who is Most at Risk?
-# - Are younger employees leaving at a higher rate than older employees?
-# - How does total working experience influence attrition?
-
-# Q5. Promotion & Career Growth Opportunities
-# - We want to ensure that employees see long-term career growth in our company.
-# - How does the number of promotions (YearsSinceLastPromotion) relate to attrition?
-# - Are employees with fewer promotions more likely to leave?
-
-
-# --------------------------------------
-
-
-# Install and Load Packages
+# Install and load packages
 
 ## Install
-install.packages("dplyr")
-install.packages("ggplot2")
-install.packages("tidymodels")
+install.packages("tidyverse") # data manipulation
+install.packages("tidymodels") # machine learning
+install.packages("effsize") # effect size calculation
+install.packages("ggcorrplot") # correlation matrix
+
+# Load
+library(tidyverse)
+library(tidymodels)
+library(effsize)
+library(ggcorrplot)
+
+
+# ------------------------------------------------------
+
+
+# Load the dataset
 
 ## Load
-library(dplyr)
-library(ggplot2)
-library(tidymodels)
-
-
-# --------------------------------------
-
-
-# Load the Dataset
-
-## Import the dataset
 hr <- read.csv("hr_employee_attrition_dataset.csv")
 
 ## Preview
@@ -68,356 +38,389 @@ head(hr)
 glimpse(hr)
 
 
-# --------------------------------------
+# ------------------------------------------------------
 
 
-# Clean the Data
+# Explore and clean the data
 
-## Convert colunms to factor variables
+## Convert categorical variables to factor
 
-### Define variables to convert
-factor_cols <- c("Attrition", "BusinessTravel","Department",
-                 "Education", "EducationField", "Gender",
-                 "JobLevel", "JobRole", "MaritalStatus",
-                 "Over18", "OverTime", "StockOptionLevel")
+### Define categorical variables
+cat_vars <- c("Attrition", "BusinessTravel","Department",
+              "Education", "EducationField", "Gender",
+              "JobRole", "MaritalStatus",
+              "Over18", "OverTime")
 
 ### Convert to factor
 hr_cleaned <- hr |>
-  mutate(across(all_of(factor_cols), as.factor))
-
+  
+  #### Mutate across
+  mutate(across(all_of(cat_vars), as.factor))
+  
 ### Check the results
 glimpse(hr_cleaned)
 
 
-## Check for missing data
-any(is.na(hr_cleaned))
+## Handle missing values
+
+### Check for missing values
+anyNA(hr_cleaned)
+
+### Comment: No missing values found
 
 
-# --------------------------------------
-
-
-# Business Question 1
-
-# Q1. Attrition Risk by Department & Role
-# - We’ve been noticing an increase in employee turnover.
-# - Which departments and job roles have the highest attrition rates?
-
-
-## Calculate attribution risk by department
-attrition_risk_by_dep <- hr_cleaned |>
+## Summarise the attrition rate
+hr_cleaned |>
   
-  ### Group by department
-  group_by(Department) |>
+  ### Group and count by attrition
+  count(Attrition, name = "Count") |>
   
-  ### Compute attrition risk
-  summarise(AttritionRisk = mean(Attrition == "Yes") * 100) |>
+  ### Compute percentage
+  mutate(Percent = round(Count / sum(Count) * 100, 2))
+
+#   Attrition Count Percent
+# 1        No  1233   83.88
+# 2       Yes   237   16.12
+
+## Comment: There are quite fewer people who left than people who stayed
+
+
+# ------------------------------------------------------
+
+
+# EDA, part 1
+
+## Get an overview of the relationships in the data
+hr_cleaned |>
   
-  ### Ungroup
-  ungroup() |>
+  ### Encode attrition to numeric
+  mutate(AttritionEncoded = if_else(Attrition == "Yes",
+                                    1,
+                                    0)) |>
   
-  ## Arrange by attrition risk, descending
-  arrange(desc(AttritionRisk))
-
-
-## Print the results
-attrition_risk_by_dep
-
-
-## Visualise the results
-attrition_risk_by_dep |>
+  ### Select only numeric variables
+  select(where(is.numeric)) |>
   
-  ### Reorder departments by attrition risk
-  mutate(Department = fct_reorder(Department,
-                                  AttritionRisk,
-                                  .desc = TRUE)) |>
+  ### Create a correlation matrix
+  cor(use = "complete.obs") |>
   
-  ### Aesthetic mapping
-  ggplot(aes(x = Department,
-             y = AttritionRisk,
-             fill = Department)) +
-  
-  ### Call bar plot
-  geom_col() +
-  
-  ## Adjust theme to minimal
-  theme_minimal() +
-  
-  ### Add text elements
-  labs(title = "Attrition Risk by Department",
-       x = "Departments",
-       y = "Attrition Risk (%)",
-       fill = "Departments") +
-  
-  ### Adjust x scale
-  scale_x_discrete(labels = c("Human Resources" = "HR",
-                              "Research & Development" = "R&D",
-                              "Sales" = "Sales"))
+  #### Visualise the correlation matrix
+  ggcorrplot(lab = TRUE,
+             type = "lower",
+             colors = c("blue", "white", "red"),
+             lab_size = 2.5)
+
+## Comments:
+## - All correlations between attrition and other variables are low (min = 0, max = 0.17)
+## - This suggests that attrition may be a result of a combination of several factors rather than any single factor alone
 
 
-
-## Calculate attribution risk by job roles
-attrition_risk_by_job <- hr_cleaned |>
-  
-  ### Group by job role
-  group_by(JobRole) |>
-  
-  ### Compute attrition risk
-  summarise(AttritionRisk = mean(Attrition == "Yes") * 100) |>
-  
-  ### Ungroup
-  ungroup() |>
-  
-  ## Arrange by attrition risk, descending
-  arrange(desc(AttritionRisk))
+# ------------------------------------------------------
 
 
-## Print the results
-attrition_risk_by_job
+# EDA, part 2
 
+# Explore 3 factors likely to affect attrition
 
-## Visualise the results
-attrition_risk_by_job |>
-  
-  ### Reorder departments by attrition risk
-  mutate(JobRole = fct_reorder(JobRole,
-                                  AttritionRisk,
-                                  .desc = TRUE)) |>
-  
-  ### Aesthetic mapping
-  ggplot(aes(x = JobRole,
-             y = AttritionRisk,
-             fill = JobRole)) +
-  
-  ### Call bar plot
-  geom_col() +
-  
-  ## Adjust theme to minimal
-  theme_minimal() +
-  
-  ### Add text elements
-  labs(title = "Attrition Risk by Job Role",
-       x = "Job Roles",
-       y = "Attrition Risk (%)",
-       fill = "Job Role") +
-  
-  ### Customise text elements
-  theme(axis.text.x = element_text(angle = 45, 
-                                   hjust = 1)) +
-  
-  ### Adjust x scale
-  scale_x_discrete()
+# The 3 factors:
+# 1. Monlthy income: employees may leave because of insufficient financial incentive, with lower income associated with higher attrition rate
+# 2. Overtime: employees may leave because of workload, where those with more overtime more likely to leave
+# 3. EnvironmentSatisfaction: those unsatisfied with their workplace settings may be more likely to leave
 
-
-# --------------------------------------
-
-
-# Q2. Work-Life Balance & Overtime
-# - Employees have expressed concerns about work-life balance.
-# - How does overtime impact attrition?
-# - Are employees who work overtime more likely to leave?
-
-
-## Create a matrix for overtime vs attrition
-table(overtime = hr_cleaned$OverTime,
-      attrition = hr_cleaned$Attrition)
-
-
-## Count attrition by overtime
-attrition_by_overtime <- hr_cleaned |>
-  
-  ## Group by overtime
-  group_by(OverTime) |>
-  
-  ## Count attrition
-  summarise(Count = sum(Attrition == "Yes"),
-            Total = n(),
-            Risk = mean(Attrition == "Yes") * 100) |>
-  
-  ## Ungroup
-  ungroup() |>
-  
-  ## Arrange by attrition count
-  arrange(desc(Risk))
-
-
-## Print the results
-attrition_by_overtime
-
-
-## Visualise the results
-attrition_by_overtime |>
-  
-  ## Aesthetic mapping
-  ggplot(aes(x = OverTime,
-             y = Risk,
-             fill = OverTime)) +
-  
-  ### Call on bar plot
-  geom_col() +
-  
-  ## Adjust theme to minimal
-  theme_minimal() +
-  
-  ## Add title, labels, legend
-  labs(title = "Attrition Risk by Overtime Type",
-       x = "Overtime Type",
-       y = "Attrition Risk (%)",
-       fill = "Overtime Type") +
-  
-  ## Adjust x scale
-  scale_x_discrete()
-
-
-# --------------------------------------
-
-
-# Q3. Salary vs. Attrition: The Pay Gap Dilemma
-# - Do employees who earn less tend to leave more frequently?
-# - What’s the average monthly income of those who stay vs. those who leave?
-# - Are we paying our high-performing employees enough to retain them?
-
-
-## Perform an independent t-test
-## to see if monthly income differs by attrition
-t.test(MonthlyIncome ~ Attrition,
-       data = hr_cleaned)
-
-
-## Perform an independent two-sample t-test
-## to see if, among high-performers, those who leave
-## earn less or more monthly income
-
-### Filter for high-perfomers
-high_performers <- hr_cleaned |>
-  
-  #### Filter for PerformanceRating >= 4
-  filter(PerformanceRating >= 4)
-
-### Filter for those who left
-attrition_yes <- hr_cleaned |>
-  
-  #### Filter for Attrition == "Yes"
-  filter(Attrition == "Yes")
-
-### Perform the t-test
-t.test(high_performers$MonthlyIncome,
-       attrition_yes$MonthlyIncome)
-
-
-# --------------------------------------
-
-
-# Q4. Age & Experience: Who is Most at Risk?
-# - Are younger employees leaving at a higher rate than older employees?
-# - How does total working experience influence attrition?
-
-## Compute attrition risk by age group
-attrition_by_age <- hr_cleaned |>
-  
-  ## Create age groups
-  mutate(AgeGroup = if_else(Age > quantile(Age, 0.5),
-                            "Older",
-                            "Younger")) |>
-  
-  ## Group by age group
-  group_by(AgeGroup) |>
-  
-  ## Compute attrition risk
-  summarise(AttritionRisk = mean(Attrition == "Yes") * 100) |>
-  
-  ## Ungroup
-  ungroup() |>
-  
-  ## Arrange by attrition risk, descending
-  arrange(desc(AttritionRisk))
-
-
-## Print the results
-attrition_by_age
-
-
-## Visualise the results
-attrition_by_age |>
-  
-  ## Reorder age group
-  mutate(AgeGroup = factor(AgeGroup,
-                           levels = c("Younger",
-                                      "Older"))) |>
-  
-  ### Aesthetic mapping
-  ggplot(aes(x = AgeGroup, 
-             y = AttritionRisk,
-             fill = AgeGroup)) +
-  
-  ### Call on bar plot
-  geom_col() +
-
-  ### Adjust theme to minimal
-  theme_minimal() +
-  
-  ### Add title, labels, legend
-  labs(title = "Attrition Risk by Age Group",
-       x = "Age Group",
-       y = "Attrition Risk (%)",
-       fill = "Age Group") +
-  
-  ### Adjust x scale
-  scale_x_discrete()
-
-
-
-# --------------------------------------
-
-
-# Q5. Promotion & Career Growth Opportunities
-# - We want to ensure that employees see long-term career growth in our company.
-# - How does the number of promotions (YearsSinceLastPromotion) relate to attrition?
-# - Are employees with fewer promotions more likely to leave?
-
-## Compute the years since last promotion by attrition
-promotion_by_attrition <- hr_cleaned |> 
+## 1. Monlthy income vs attrition
+hr_cleaned |>
   
   ### Group by attrition
   group_by(Attrition) |>
   
-  ### Compute the average years since last promotion
-  summarise(Promotion = mean(YearsSinceLastPromotion)) |>
+  ### Summarise
+  summarise(AVGMonthlyIncome = mean(MonthlyIncome)) |>
   
   ### Ungroup
   ungroup() |>
   
-  ### Arrange by the years since last promotion, descending
-  arrange(desc(Promotion))
-
-
-## Print the results
-promotion_by_attrition
-
-
-## Visualise the results
-promotion_by_attrition |>
-  
   ### Aesthetic mapping
   ggplot(aes(x = Attrition,
-             y = Promotion,
+             y = AVGMonthlyIncome,
              fill = Attrition)) +
   
   ### Call bar plot
   geom_col() +
   
-  ## Adjust theme to minimal
-  theme_minimal() +
-  
   ### Add text elements
-  labs(title = "Years Since Last Promotion by Attrition",
-       x = "Attrition",
-       y = "Years",
-       fill = "Attrition") +
+  labs(title = "Monthly Income by Attrition",
+       x = "Attrition Status",
+       y = "Average Monthly Income",
+       fill = "Attrition Status") +
   
   ### Adjust x scale
-  scale_x_discrete()
+  scale_x_discrete() +
+  
+  ### Change theme to classic for easy viewing
+  theme_classic()
+
+## Comment:
+## - On average, those who stayed tended to earn more than those who left
+## - This strongly suggests that monthly income is a contributing factor to attrition
+  
+
+## Check the distribution of monthly income
+hr_cleaned |>
+  
+  ### Aesthetic mapping
+  ggplot(aes(x = MonthlyIncome,
+             fill = Attrition)) +
+  
+  ### Call density plot
+  geom_density(alpha = 0.5) +
+  
+  ### Add text elements
+  labs(title = "Monthly Income Distribution",
+       x = "Monthly Income",
+       fill = "Attrition Status") +
+  
+  ### Change theme to classic for easy viewing
+  theme_classic()
+
+## Comments:
+## - The distributions of both attrition groups are positivelyskewed
+## - There were more proportionally more people who left in the lower end of the monthly income distribution
+## - This adds further support to the earlier analysis that monthly income is a contributor of attrition
 
 
-## Compute an indepedent t-test
-t.test(YearsSinceLastPromotion ~ Attrition,
+## 2. Overtime vs attrition
+hr_cleaned |>
+  
+  ### Group by overtime and attrition
+  group_by(OverTime, Attrition) |>
+  
+  ### Count the observations in each group
+  summarise(Count = n(), .groups = "drop") |>
+  
+  ### Group by overtime
+  group_by(OverTime) |>
+  
+  ### Compute percentage
+  mutate(Percent = Count / sum(Count) * 100) |>
+  
+  ### Ungroup
+  ungroup() |>
+  
+  ### Aesthetic mapping
+  ggplot(aes(x = OverTime,
+             y = Percent,
+             fill = Attrition)) +
+  
+  ### Call count plot
+  geom_col(position = "dodge") +
+  
+  ### Add text elements
+  labs(title = "Overtime vs Attrition",
+       x = "Overtime",
+       y = "Percentage",
+       fill = "Attrition Status") +
+  
+  ### Adjust x scale
+  scale_x_discrete() +
+  
+  ### Change theme to classic for easy viewing
+  theme_classic()
+
+## Comments:
+## - In both overtime conditions, there were more people who stayed than who left
+## - The attrition rate was significantly higher in the overtime condition than in the no-overtime condition
+## - Conversely, the percentage of those who stayed was higher in no-overtime condition than in the overtime condition
+## - This suggests that overtime contributes attrition
+
+
+## 3. Environment satisfaction vs attrition
+hr_cleaned |>
+  
+  ### Group by attrition
+  group_by(Attrition) |>
+  
+  ### Compute mean environment satisfaction
+  summarise(AVGEnvSat = mean(EnvironmentSatisfaction)) |>
+  
+  ### Ungroup
+  ungroup() |>
+
+  ### Aesthetic mapping
+  ggplot(aes(x = Attrition,
+             y = AVGEnvSat,
+             fill = Attrition)) +
+  
+  ### Call bar plot
+  geom_col() +
+  
+  ### Add text elements
+  labs(title = "Enviroment Satisfaction vs Attrition",
+       x = "Attrition Status",
+       y = "Average Environment Satisfaction",
+       fill = "Attrition Status") +
+  
+  ### Adjust x scale
+  scale_x_discrete() +
+  
+  ### Change theme to classic for easy viewing
+  theme_classic()
+
+
+### Conduct an independent t-test to test the difference
+t.test(EnvironmentSatisfaction ~ Attrition,
        data = hr_cleaned)
+
+### Results:
+### t = 3.7513, df = 316.62, p-value = 0.0002092
+### sample estimates:
+### mean in group No mean in group Yes 
+### 2.771290          2.464135 
+
+## Comments:
+## - There is a significant difference in environment satisfaction between the 2 attrition groups
+## - Those who left tended to be less satisfied with the workplace settings than those who stayed
+## - This suggests that environment satisfaction is likely a contributing factor to attrition
+
+
+### Check the effect size
+cohen.d(EnvironmentSatisfaction ~ Attrition,
+        data = hr_cleaned)
+
+### Cohen's d
+### 
+### d estimate: 0.2824158 (small)
+### 95 percent confidence interval:
+###   lower     upper 
+### 0.1429148 0.4219167 
+
+## Comments:
+## - This suggests that the difference, while statistically significant, may not be as practically important as other factors such as monthly income and overtime
+## - Thus, when tackling attrition, environment satisfaction may be given lower priority
+
+
+# ------------------------------------------------------
+
+
+# EDA, part 3
+
+# Explore attritions patterns by department and job role
+
+## Attrition by department
+hr_cleaned |>
+  
+  ### Group by department and attrition
+  group_by(Department, Attrition) |>
+  
+  ### Count the number of observations
+  summarise(Count = n(), .groups = "drop") |>
+  
+  ### Group by department
+  group_by(Department) |>
+  
+  ### Compute percentage
+  mutate(Percent = Count / sum(Count) * 100) |>
+  
+  ### Ungroup
+  ungroup() |>
+  
+  ### Aesthetic mapping
+  ggplot(aes(x = Department,
+             y = Percent,
+             fill = Attrition)) +
+  
+  ### Call on bar plot
+  geom_col(position = "dodge") +
+  
+  ## Add percent text
+  geom_text(aes(label = paste(round(Percent, 0), "%")),
+            position = position_dodge(width = 0.9),
+            vjust = -0.5,
+            size = 3) +
+  
+  ### Add text elements
+  labs(title = "Attrition by Department",
+       x = "Departments",
+       y = "Attrition Percentage",
+       fill = "Attrition Status") +
+  
+  ### Adjust x scale
+  scale_x_discrete() +
+  
+  ### Adjust theme to classic for easy viewing
+  theme_classic()
+
+## Comments:
+## - All departments have similar percentage of people leaving and staying
+## Notably, however, R&D has lower percent of people leaving and slightly higher percentage of people staying, compared to the other departments
+## Additionally, Sales has the highest percentage of people leaving and lowest percetage of people staying. This suggests that the attrition may have the most impact in Sales.
+
+
+## Attrition by job role
+hr_cleaned |>
+  
+  
+  ### Group by department and attrition
+  group_by(JobRole) |>
+  
+  ### Count the number of observations
+  summarise(AttritionRate = mean(Attrition == "Yes") * 100) |>
+  
+  ### Ungroup
+  ungroup() |>
+  
+  mutate(JobRole = fct_reorder(JobRole,
+                               AttritionRate,
+                               .desc = TRUE)) |>
+  
+  ### Aesthetic mapping
+  ggplot(aes(x = JobRole,
+             y = AttritionRate,
+             fill = JobRole)) +
+  
+  ### Call on bar plot
+  geom_col() +
+  
+  ## Add percent text
+  geom_text(aes(label = paste(round(AttritionRate, 0), "%")),
+            vjust = -0.5,
+            size = 3) +
+  
+  ### Add text elements
+  labs(title = "Attrition Rate by Job Role",
+       x = "Job Roles",
+       y = "Attrition Rate (%)",
+       fill = "Job Roles") +
+
+  ### Adjust x scale
+  scale_x_discrete() +
+  
+  ### Adjust theme to classic for easy viewing
+  theme_classic() +
+  
+  ### Adjust text elements
+  theme(axis.text.x = element_text(angle = 45, 
+                                   hjust = 1))
+
+## Comments:
+## - Sales Rep has the highest percentage of attrition
+## - Research Director has the lowest percentage of attrition
+## - Given the job role titles, employees in the lower job levels appear to leave more often
+  
+### Confirm whether job level is associated with attrition
+hr_cleaned |>
+  
+  #### Convert job levels to factor
+  mutate(JobLevel = as.factor(JobLevel)) |>
+  
+  #### Group by job levels
+  group_by(JobLevel) |>
+  
+  #### Compute attrition rate
+  summarise(AttritionRate = mean(Attrition == "Yes") * 100) |>
+  
+  #### 
+
+
+
+# ------------------------------------------------------
+
