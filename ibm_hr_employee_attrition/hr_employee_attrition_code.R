@@ -264,7 +264,7 @@ hr_cleaned |>
   geom_col() +
   
   ### Add text elements
-  labs(title = "Enviroment Satisfaction vs Attrition",
+  labs(title = "Environment Satisfaction vs Attrition",
        x = "Attrition Status",
        y = "Average Environment Satisfaction",
        fill = "Attrition Status") +
