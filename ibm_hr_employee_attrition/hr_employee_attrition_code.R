@@ -15,7 +15,6 @@ install.packages("tidyverse") # data manipulation
 install.packages("effsize") # effect size calculation
 install.packages("ggcorrplot") # correlation matrix
 install.packages("tidymodels") # machine learning
-install.packages("themis") # oversampling and undersampling of outcomes
 install.packages("vip") # level of feature importance
 install.packages("pdp") # plotting partial dependencies
 
@@ -24,7 +23,6 @@ library(tidyverse)
 library(effsize)
 library(ggcorrplot)
 library(tidymodels)
-library(themis)
 library(vip)
 library(pdp)
 
