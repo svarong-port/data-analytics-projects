@@ -66,7 +66,7 @@ hr_cleaned <- hr |>
 ### Set attrition factor levels
 hr_cleaned$Attrition <- factor(hr_cleaned$Attrition,
                                levels = c("Yes", "No"))
-  
+
 ### Check the results
 glimpse(hr_cleaned)
 
@@ -173,7 +173,7 @@ hr_cleaned |>
 ## Comment:
 ## - On average, those who stayed tended to earn more than those who left.
 ## - This strongly suggests that monthly income is a contributing factor to attrition.
-  
+
 
 ## Check the distribution of monthly income
 hr_cleaned |>
@@ -255,7 +255,7 @@ hr_cleaned |>
   
   ### Ungroup
   ungroup() |>
-
+  
   ### Aesthetic mapping
   ggplot(aes(x = Attrition,
              y = AVGEnvSat,
@@ -402,7 +402,7 @@ hr_cleaned |>
        x = "Job Roles",
        y = "Attrition Rate (%)",
        fill = "Job Roles") +
-
+  
   ### Adjust x scale
   scale_x_discrete() +
   
@@ -417,7 +417,7 @@ hr_cleaned |>
 ## - Sales Rep has the highest percentage of attrition.
 ## - Research Director has the lowest percentage of attrition.
 ## - Given the job role titles, employees in the lower job levels appear to leave more often.
-  
+
 ### Confirm whether job level is associated with attrition
 hr_cleaned |>
   
@@ -432,8 +432,8 @@ hr_cleaned |>
   
   ### Reorder job levels
   mutate(JobLevel = fct_reorder(JobLevel,
-                               AttritionRate,
-                               .desc = TRUE)) |>
+                                AttritionRate,
+                                .desc = TRUE)) |>
   
   ### Aesthetic mapping
   ggplot(aes(x = JobLevel,
@@ -581,6 +581,9 @@ hr_split <- initial_split(hr_modelling,
 
 ### Create a training set
 hr_train <- training(hr_split)
+
+### Create a training set
+hr_test <- testing(hr_split)
 
 
 ## Instantiate a random forest model
@@ -833,91 +836,82 @@ rf_wfl_final_1 <- finalize_workflow(rf_wfl_1,
                                     rf_best_hp_1)
 
 ## Fit the model
-rf_wkl_fit_1 <- last_fit(rf_wfl_final_1,
-                         split = hr_split,
-                         metrics = rf_metrics)
+rf_wkl_fit_1 <- fit(rf_wfl_final_1,
+                    data = hr_train)
 
 
-## Collect predictions
-rf_predictions_1 <- collect_predictions(rf_wkl_fit_1)
+## Make predictions
 
-## Print predictions
+### Get prediction probabilities
+rf_pred_prob_1 <- predict(rf_wkl_fit_1,
+                          new_data = hr_test,
+                          type = "prob")
+
+### Get predicted classes
+rf_pred_class_1 <- predict(rf_wkl_fit_1,
+                           new_data = hr_test,
+                           type = "class")
+  
+### Combine the results
+rf_predictions_1 <- tibble(actual = hr_test$Attrition,
+                           predicted = rf_pred_class_1$.pred_class,
+                           pred_yes = rf_pred_prob_1$.pred_Yes,
+                           pred_no = rf_pred_prob_1$.pred_No)
+
+## Print the results
 rf_predictions_1
-
-# # A tibble: 295 × 7
-#     .pred_class .pred_Yes .pred_No id            .row Attrition .config
-#     <fct>           <dbl>    <dbl> <chr>        <int> <fct>     <chr>  
-#   1 No             0.442     0.558 train/test …     1 Yes       Prepro…
-#   2 No             0.467     0.533 train/test …     5 No        Prepro…
-#   3 No             0.129     0.871 train/test …    10 No        Prepro…
-#   4 No             0.260     0.740 train/test …    22 Yes       Prepro…
-#   5 No             0.492     0.508 train/test …    24 No        Prepro…
-#   6 No             0.0634    0.937 train/test …    28 No        Prepro…
-#   7 No             0.314     0.686 train/test …    33 No        Prepro…
-#   8 Yes            0.522     0.478 train/test …    43 Yes       Prepro…
-#   9 No             0.239     0.761 train/test …    47 No        Prepro…
-#  10 No             0.120     0.880 train/test …    54 No        Prepro…
-# # ℹ 285 more rows
-# # ℹ Use `print(n = ...)` to see more rows
-
 
 
 ## Create a confusion matrix
 rf_conf_mat_1 <- conf_mat(rf_predictions_1,
-                        truth = Attrition,
-                        estimate = .pred_class)
+                          truth = actual,
+                          estimate = predicted)
 
 ## Print the confusion matrix
 rf_conf_mat_1
 
-#           Truth
-# Prediction Yes  No
-#        Yes  13  4
-#        No   35 243
+## Get metrics
+summary(rf_conf_mat_1)
 
-
-## Collect metrics
-rf_perf_results_1 <- collect_metrics(rf_wkl_fit_1)
-
-## Print metrics
-rf_perf_results_1
-
-# # A tibble: 4 × 4
-# .metric   .estimator .estimate .config             
-#   <chr>     <chr>        <dbl> <chr>               
-# 1 accuracy  binary       0.868 Preprocessor1_Model1
-# 2 recall    binary       0.271 Preprocessor1_Model1
-# 3 precision binary       0.765 Preprocessor1_Model1
-# 4 roc_auc   binary       0.768 Preprocessor1_Model1
+# # A tibble: 13 × 3
+#     .metric               .estimator .estimate
+#     <chr>                 <chr>          <dbl>
+#   1 accuracy              binary        0.858 
+#   2 kap                   binary        0.269 
+#   3 sens                  binary        0.208 
+#   4 spec                  binary        0.984 
+#   5 ppv                   binary        0.714 
+#   6 npv                   binary        0.865 
+#   7 mcc                   binary        0.334 
+#   8 j_index               binary        0.192 
+#   9 bal_accuracy          binary        0.596 
+#  10 detection_prevalence  binary        0.0475
+#  11 precision             binary        0.714 
+#  12 recall                binary        0.208 
+#  13 f_meas                binary        0.323 
 
 
 ## Plot ROC curve
 roc_curve(rf_predictions_1,
-          truth = Attrition,
-          .pred_Yes) |> 
+          truth = actual,
+          pred_yes) |> 
   autoplot()
 
 
 ## Get level of importance
 
 ### Get final fit model
-rf_final_model_1 <- rf_wkl_fit_1 |>
-  
-  ### Extract workflow object
-  extract_workflow() |>
-  
-  ### Extract fit object
-  extract_fit_parsnip()
+rf_final_model_1 <- extract_fit_parsnip(rf_wkl_fit_1)
 
 ### Get levels of importance
-vip(rf_final_model_1, num_features = 10)
+vip(rf_final_model_1)
 
 
 ## Get the directions of the relationships
 
 ### Create a vector of 5 most important predictors
-important_predictors <- c("MonthlyIncome",
-                          "OverTime_Yes",
+important_predictors <- c("OverTime_Yes",
+                          "MonthlyIncome",
                           "Age",
                           "YearsWithCurrManager",
                           "MaritalStatus_Single")
@@ -946,25 +940,25 @@ for (predictor in important_predictors) {
 ## - The model improvement will likely benefit from future with more positive attrition instances.
 
 ## Based on the current model, the five most important predictors are:
-## (1) Monthly income
-## (2) Overtime (yes)
+## (1) Overtime (yes)
+## (2) Monthly income
 ## (3) Age
 ## (4) Years with current manager
 ## (5) Marital status (single)
 
 
-## Predictor 1. Monthly income
+## Predictor 1. Overtime (yes)
+## Relationship with attrition: linear (positive)
+## - This is not surprising given that overtime may be associated with workload or lead employees to perceive their work as more demanding.
+## - This in turn may lead to more work-related stress, which make employees more likely to leave the company.
+
+
+## Predictor 2. Monthly income
 ## Relationship with attrition: resembling U shape
 ## - This predictor is also not surprising.
 ## - Being employed is a transactional relationship.
 ## - If employees feel the financial return is not sufficient for their effort, they may leave in search of more satisfying contract.
 ## - Additionally, at a certain point, being paid more may lead employees to seek new opportunities where they may be able to earn even more.
-
-
-## Predictor 2. Overtime (yes)
-## Relationship with attrition: linear (positive)
-## - This is not surprising given that overtime may be associated with workload or lead employees to perceive their work as more demanding.
-## - This in turn may lead to more work-related stress, which make employees more likely to leave the company.
 
 
 ## Predict 3. Age
@@ -989,12 +983,13 @@ for (predictor in important_predictors) {
 
 ## Recommendations based on the model
 
-## Predictor 1. Monthly income
-## Recommendation 1: Consider salary structure by balancing the incentive with workload. This may be done in conjunction with recommendation 1 from predictor 1.
-
-## Predictor 2. Overtime (yes)
+## Predictor 1. Overtime (yes)
 ## Recommendation 1: Manage workload by reviewing the company overall workload and reallocating certain responsibilities and cutting down on non-essential tasks to relieve the employees of unnecessary workload.
 ## Recommendation 2: Implement new technology or work procedures which may facilitate work process, allowing employees to accomplish the same amount of work in less time. This is a win-win situation where the company enjoy the same level of productivity while the employees become happier.
+
+
+## Predictor 2. Monthly income
+## Recommendation 1: Consider salary structure by balancing the incentive with workload. This may be done in conjunction with recommendation 1 from predictor 1.
 
 
 ## Predictor 3. Age
