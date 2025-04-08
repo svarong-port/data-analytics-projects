@@ -1097,26 +1097,22 @@ for (predictor in important_predictors) {
 ## - If employees feel the financial return is not sufficient for their effort, they may leave in search of more satisfying contract.
 ## - Additionally, at a certain point, being paid more may lead employees to seek new opportunities where they may be able to earn even more.
 
-
 ## Predictor 2. Overtime (yes)
 ## Relationship with attrition: linear (positive)
 ## - This is not surprising given that overtime may be associated with workload or lead employees to perceive their work as more demanding.
 ## - This in turn may lead to more work-related stress, which make employees more likely to leave the company.
 
-
-## Predict 3. Age
+## Predictor 3. Age
 ## Relationship with attrition: resembling U shape
 ## - The relationship between this predictor and attrition suggests that younger people are more likely to leave.
 ## - As they age, they become less likely to leave, up to a certain point.
 ## - After that, they become more likely to leave but not as likely as their younger counterparts.
-
 
 ## Predictor 4. Years with current managers
 ## Relationship with attrition: resembling L shape
 ## - There are two ways to interpret this.
 ## - First, this predictor may not be the cause but a correlate of attrition as people leave early are likely to have fewer years with their managers.
 ## - Second, years with current managers may reflect stagnation in the employees' career, which may in turn motivate employees to seek career growth elsewhere.
-
 
 ## Predict 5. Environment satisfaction
 ## Relationship with attrition: relatively linear (negative)
@@ -1137,11 +1133,9 @@ for (predictor in important_predictors) {
 ## Recommendation 1: The company may investigate whether the company culture is a good fit the younger hires, given that younger employees are more likely to leave the company. If the culture is a contributor, the company may implement a plan to adjust certain aspects of the company culture to be attractive to younger hires.
 ## Recommendation 2: Regarding older employees, the company may also explore what factors are driving these employees away. This may be due to culture or other job or workplace characteristics such as career path or promotion.
 
-
 ## Predictor 4. Years with current managers
 ## Recommendation 1: Validate whether years with current managers are predictive of attrition. This may be done by selectively interviewing employees or reviewing additional employee data.
 ## Recommendation 2: If years with current managers reflect , Communicate clear career path to the employees to ensure that they are aware of the opportunities for professional growth.
-
 
 ## Predictor 5. Environment satisfaction
 ## Recommendation 1: The company may dive deeper into which environmental factors that may discourage employees from staying. This may be physical (e.g., workspace, common areas), social (e.g., peer, supervisors), or a combination of both. By analysing which contextual factors contribute to attrition, the company has a greater chance of successfully tackling attrition. 
