@@ -689,23 +689,6 @@ rf_predictions <- collect_predictions(rf_wkl_fit)
 ## Print predictions
 rf_predictions
 
-# # A tibble: 295 × 7
-#   .pred_class .pred_Yes .pred_No id     .row Attrition
-#   <fct>           <dbl>    <dbl>  <chr> <int> <fct>    
-#   1 No            0.314     0.686 trai…     1 Yes      
-#   2 No            0.230     0.770 trai…     5 No       
-#   3 No            0.0934    0.907 trai…    10 No       
-#   4 No            0.156     0.844 trai…    22 Yes      
-#   5 No            0.368     0.632 trai…    24 No       
-#   6 No            0.0387    0.961 trai…    28 No       
-#   7 No            0.239     0.761 trai…    33 No       
-#   8 No            0.343     0.657 trai…    43 Yes      
-#   9 No            0.142     0.858 trai…    47 No       
-#  10 No            0.0560    0.944 trai…    54 No       
-# # ℹ 285 more rows
-# # ℹ 1 more variable: .config <chr>
-# # ℹ Use `print(n = ...)` to see more rows
-
 
 ## Create a confusion matrix
 rf_conf_mat <- conf_mat(rf_predictions,
@@ -868,26 +851,31 @@ rf_conf_mat_1 <- conf_mat(rf_predictions_1,
 ## Print the confusion matrix
 rf_conf_mat_1
 
+#            Truth
+# Prediction Yes  No
+#        Yes  11   4
+#        No   37 243
+
+
 ## Get metrics
 summary(rf_conf_mat_1)
 
 # # A tibble: 13 × 3
-#     .metric               .estimator .estimate
-#     <chr>                 <chr>          <dbl>
-#   1 accuracy              binary        0.858 
-#   2 kap                   binary        0.269 
-#   3 sens                  binary        0.208 
-#   4 spec                  binary        0.984 
-#   5 ppv                   binary        0.714 
-#   6 npv                   binary        0.865 
-#   7 mcc                   binary        0.334 
-#   8 j_index               binary        0.192 
-#   9 bal_accuracy          binary        0.596 
-#  10 detection_prevalence  binary        0.0475
-#  11 precision             binary        0.714 
-#  12 recall                binary        0.208 
-#  13 f_meas                binary        0.323 
-
+#     .metric              .estimator .estimate
+#     <chr>                <chr>          <dbl>
+#   1 accuracy             binary        0.861 
+#   2 kap                  binary        0.295 
+#   3 sens                 binary        0.229  
+#   4 spec                 binary        0.984 
+#   5 ppv                  binary        0.733  
+#   6 npv                  binary        0.868  
+#   7 mcc                  binary        0.358 
+#   8 j_index              binary        0.213  
+#   9 bal_accuracy         binary        0.606  
+#  10 detection_prevalence binary        0.0508
+#  11 precision            binary        0.733
+#  12 recall               binary        0.229  
+#  13 f_meas               binary        0.349  
 
 ## Plot ROC curve
 roc_curve(rf_predictions_1,
@@ -895,6 +883,163 @@ roc_curve(rf_predictions_1,
           pred_yes) |> 
   autoplot()
 
+## Compute ROC AUC
+roc_auc(rf_predictions_1,
+        truth = actual,
+        pred_yes)
+
+
+# ------------------------------------------------------
+
+
+# Calibrate the model performance by adjust the threshold for predicting positive class
+
+## Define a set of threshold
+thresholds <- seq(0.1, 0.9, by = 0.1)
+
+## For-loop through the threshold
+
+### Create an empty vector for recall values
+recalls <- numeric(9)
+
+### Create an empty vector for precision values
+precisions <- numeric(9)
+
+### Create an empty vector for all cases
+all <- numeric(9)
+
+### Create an empty vector for all positive cases
+### (actual and predicted)
+all_positives <- numeric(9)
+
+### Create an empty vector for actual positive cases
+true_positives <- numeric(9)
+
+### Create the for loop
+for (i in 1:length(thresholds)) {
+  
+  ### Make predictions with the threshold
+  new_pred <- if_else(rf_predictions_1$pred_yes > thresholds[i],
+                      "Yes",
+                      "No")
+  
+  ### Create a tibble to store the results
+  predictions <- tibble(actual = hr_test$Attrition,
+                        predicted = factor(new_pred, 
+                                           levels = c("Yes", "No")))
+  
+  ### Calculate recall
+  recalls[i] <- recall(predictions,
+                       truth = actual,
+                       estimate = predicted,
+                       event_level = "first") |>
+    pull(.estimate)
+  
+  ### Calculate precision
+  precisions[i] <- precision(predictions,
+                             truth = actual,
+                             estimate = predicted,
+                             event_level = "first") |>
+    pull(.estimate)
+
+  
+  ### Count all cases
+  all[i] <- nrow(predictions)
+  
+  ### Calculate all positive cases
+  all_positives[i] <- sum(predictions$predicted == "Yes")
+  
+  ### Calculate actual positive cases
+  true_positives[i] <- sum(predictions$predicted == "Yes" & predictions$actual == "Yes")
+  
+
+}
+
+## Store the thresholds and corresponding recalls
+thres_recall <- tibble(threshold = thresholds,
+                       recall = recalls,
+                       precision = precisions,
+                       total = all,
+                       flagged = all_positives,
+                       true_pos = true_positives)
+
+## Print the for loop results
+thres_recall
+
+# A tibble: 9 × 6
+#   threshold recall precision total flagged true_pos
+#       <dbl>  <dbl>     <dbl> <dbl>   <dbl>    <dbl>
+# 1       0.1 0.938      0.178   295     253       45
+# 2       0.2 0.771      0.274   295     135       37
+# 3       0.3 0.583      0.364   295      77       28
+# 4       0.4 0.417      0.606   295      33       20
+# 5       0.5 0.229      0.733   295      15       11
+# 6       0.6 0.104      0.714   295       7        5
+# 7       0.7 0.0417     0.667   295       3        2
+# 8       0.8 0         NA       295       0        0
+# 9       0.9 0         NA       295       0        0
+
+
+## Plot threshold vs recall and precision
+
+### Recall
+plot(thres_recall$threshold,
+     thres_recall$recall,
+     type = "b",
+     main = "Recall & Precision vs Threshold",
+     xlab = "Threshold",
+     ylab = "Score",
+     col = "blue",
+     pch = 16,
+     ylim = c(0, 1))  # Ensure room for both lines
+
+### Precision
+lines(thres_recall$threshold,
+      thres_recall$precision,
+      type = "b",
+      col = "red",
+      pch = 17)
+
+### Add a legend
+legend("bottomleft",
+       legend = c("Recall", "Precision"),
+       col = c("blue", "red"),
+       pch = c(16, 17),
+       lty = 1)
+
+
+# Comments:
+# - Although we are prioritising recall so that we are able to identify potential leavers, high recall would mean that we will also incorrectly identify employers who are staying as leaving.
+# - A high number of false positive, while beneficial to the our objective of retaining the company's talent, could lead to overcost as resources are placed on employers who are staying instead of those leaving.
+# - As such, while we place emphasis on recall, this should not come at too great a cost on precision.
+# - Given this line of reasoning, I choose the threshold of 0.4, as it represents a good balance between recall and precision. Specifically, we will be able to flag 33 employees out of 295 employees, 20 of which are true positive.
+## - If we adjust the threshold to 0.3, we will be able to flag about twice the number (77). However, less than half (28) are true positive.
+
+
+## Make poredictions with threshold = 0.4
+rf_final_pred <- if_else(rf_predictions_1$pred_yes > 0.4,
+                         "Yes",
+                         "No")
+
+## Store the results in a tibble
+rf_final_results <- tibble(actual = hr_test$Attrition,
+                           predicted = factor(rf_final_pred,
+                                              levels = c("Yes", "No")))
+
+
+## Create a confusion matrix
+rf_final_conf_mat <- conf_mat(rf_final_results,
+                              truth = actual,
+                              estimate = predicted)
+
+## Get metrics
+summary(rf_final_conf_mat)
+
+
+# ------------------------------------------------------
+
+
+# Get variable importance and interpret the results
 
 ## Get level of importance
 
@@ -908,11 +1053,11 @@ vip(rf_final_model_1)
 ## Get the directions of the relationships
 
 ### Create a vector of 5 most important predictors
-important_predictors <- c("OverTime_Yes",
-                          "MonthlyIncome",
+important_predictors <- c("MonthlyIncome",
+                          "OverTime_Yes",
                           "Age",
                           "YearsWithCurrManager",
-                          "MaritalStatus_Single")
+                          "EnvironmentSatisfaction")
 
 ### For-loop through the vector
 for (predictor in important_predictors) {
@@ -931,32 +1076,32 @@ for (predictor in important_predictors) {
 
 
 ## Comments:
-## - We can predict attrition with almost 87% accuracy.
-## - The model shows a balance between true positive and false positive rates as ROC AUC is 81%.
-## - The model, however, falters with recall of just almost 27%.
-## - This is likely due to class imbalance in attrition as around 84% is "No" and 16% "Yes".
-## - The model improvement will likely benefit from future with more positive attrition instances.
+## - We can predict attrition with 86% accuracy.
+## - The model shows a balance between true positive and false positive rates as ROC AUC is 76%.
+## - Despite class imbalance in the outcome, The model demonstrates a good balance between recall and precision, with recall reported at around 41% and precision 60%.
+## - The model may be improved by providing more balanced dataset.
+
 
 ## Based on the current model, the five most important predictors are:
-## (1) Overtime (yes)
-## (2) Monthly income
+## (1) Monthly income
+## (2) Overtime (yes)
 ## (3) Age
 ## (4) Years with current manager
-## (5) Marital status (single)
+## (5) Environment satisfaction
 
 
-## Predictor 1. Overtime (yes)
-## Relationship with attrition: linear (positive)
-## - This is not surprising given that overtime may be associated with workload or lead employees to perceive their work as more demanding.
-## - This in turn may lead to more work-related stress, which make employees more likely to leave the company.
-
-
-## Predictor 2. Monthly income
+## Predictor 1. Monthly income
 ## Relationship with attrition: resembling U shape
 ## - This predictor is also not surprising.
 ## - Being employed is a transactional relationship.
 ## - If employees feel the financial return is not sufficient for their effort, they may leave in search of more satisfying contract.
 ## - Additionally, at a certain point, being paid more may lead employees to seek new opportunities where they may be able to earn even more.
+
+
+## Predictor 2. Overtime (yes)
+## Relationship with attrition: linear (positive)
+## - This is not surprising given that overtime may be associated with workload or lead employees to perceive their work as more demanding.
+## - This in turn may lead to more work-related stress, which make employees more likely to leave the company.
 
 
 ## Predict 3. Age
@@ -973,22 +1118,20 @@ for (predictor in important_predictors) {
 ## - Second, years with current managers may reflect stagnation in the employees' career, which may in turn motivate employees to seek career growth elsewhere.
 
 
-## Predict 5. Marital status (single)
-## Relationship with attrition: linear
-## - This predictor is peculiar. It suggests that people who are single are more likely to leave.
-## - An interpretation is that single employees may have fewer constraints in leaving the company. Unlike their married counterpart, these employees may have fewer obligations that motivate them to stay with their current jobs. Thus, they are more likely to leave the company.
+## Predict 5. Environment satisfaction
+## Relationship with attrition: relatively linear (negative)
+## - This predictor is in line with the two-factor theory which states that part of employees' motivation stems from the work environment.
+## - The direction of the relationship suggests that the less satisfied the employees are with their environment, the more likely they are to leave.
 
 
 ## Recommendations based on the model
 
-## Predictor 1. Overtime (yes)
-## Recommendation 1: Manage workload by reviewing the company overall workload and reallocating certain responsibilities and cutting down on non-essential tasks to relieve the employees of unnecessary workload.
-## Recommendation 2: Implement new technology or work procedures which may facilitate work process, allowing employees to accomplish the same amount of work in less time. This is a win-win situation where the company enjoy the same level of productivity while the employees become happier.
-
-
-## Predictor 2. Monthly income
+## Predictor 1. Monthly income
 ## Recommendation 1: Consider salary structure by balancing the incentive with workload. This may be done in conjunction with recommendation 1 from predictor 1.
 
+## Predictor 2. Overtime (yes)
+## Recommendation 1: Manage workload by reviewing the company overall workload and reallocating certain responsibilities and cutting down on non-essential tasks to relieve the employees of unnecessary workload.
+## Recommendation 2: Implement new technology or work procedures which may facilitate work process, allowing employees to accomplish the same amount of work in less time. This is a win-win situation where the company enjoy the same level of productivity while the employees become happier.
 
 ## Predictor 3. Age
 ## Recommendation 1: The company may investigate whether the company culture is a good fit the younger hires, given that younger employees are more likely to leave the company. If the culture is a contributor, the company may implement a plan to adjust certain aspects of the company culture to be attractive to younger hires.
@@ -1000,5 +1143,5 @@ for (predictor in important_predictors) {
 ## Recommendation 2: If years with current managers reflect , Communicate clear career path to the employees to ensure that they are aware of the opportunities for professional growth.
 
 
-## Predictor 5. Marital status (single)
-## Recommendation 1: Any policy that tackles attrition may place more emphasis on employees who are single, especially if they are talent. Such policy may provide these employees with clear career path and benefits to keep them from taking the risk of finding new opportunities elsewhere. 
+## Predictor 5. Environment satisfaction
+## Recommendation 1: The company may dive deeper into which environmental factors that may discourage employees from staying. This may be physical (e.g., workspace, common areas), social (e.g., peer, supervisors), or a combination of both. By analysing which contextual factors contribute to attrition, the company has a greater chance of successfully tackling attrition. 
