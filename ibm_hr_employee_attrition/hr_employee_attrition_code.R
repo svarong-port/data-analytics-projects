@@ -991,7 +991,7 @@ plot(thres_recall$threshold,
      ylab = "Score",
      col = "blue",
      pch = 16,
-     ylim = c(0, 1))  # Ensure room for both lines
+     ylim = c(0, 1))
 
 ### Precision
 lines(thres_recall$threshold,
@@ -1001,7 +1001,7 @@ lines(thres_recall$threshold,
       pch = 17)
 
 ### Add a legend
-legend("bottomleft",
+legend("topright",
        legend = c("Recall", "Precision"),
        col = c("blue", "red"),
        pch = c(16, 17),
