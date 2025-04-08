@@ -89,10 +89,11 @@ hr_cleaned |>
   mutate(Percent = round(Count / sum(Count) * 100, 2))
 
 #   Attrition Count Percent
-# 1        No  1233   83.88
-# 2       Yes   237   16.12
+# 1       Yes   237   16.12
+# 2        No  1233   83.8
 
-## Comment: There are quite fewer people who left than people who stayed
+## Comments:
+## - There are quite fewer people who left than people who stayed.
 
 
 # ------------------------------------------------------
@@ -121,8 +122,8 @@ hr_cleaned |>
              lab_size = 2.5)
 
 ## Comments:
-## - All correlations between attrition and other variables are low (min = 0, max = 0.17)
-## - This suggests that attrition may be a result of a combination of several factors rather than any single factor alone
+## - All correlations between attrition and other variables are low (min = 0, max = 0.17).
+## - This suggests that attrition may be a result of a combination of several factors rather than any single factor alone.
 
 
 # ------------------------------------------------------
@@ -133,9 +134,9 @@ hr_cleaned |>
 # Explore 3 factors likely to affect attrition
 
 # The 3 factors:
-# 1. Monlthy income: employees may leave because of insufficient financial incentive, with lower income associated with higher attrition rate
-# 2. Overtime: employees may leave because of workload, where those with more overtime more likely to leave
-# 3. EnvironmentSatisfaction: those unsatisfied with their workplace settings may be more likely to leave
+# 1. Monlthy income: employees may leave because of insufficient financial incentive, with lower income associated with higher attrition rate.
+# 2. Overtime: employees may leave because of workload, where those with more overtime more likely to leave.
+# 3. EnvironmentSatisfaction: those unsatisfied with their workplace settings may be more likely to leave.
 
 ## 1. Monlthy income vs attrition
 hr_cleaned |>
@@ -170,8 +171,8 @@ hr_cleaned |>
   theme_classic()
 
 ## Comment:
-## - On average, those who stayed tended to earn more than those who left
-## - This strongly suggests that monthly income is a contributing factor to attrition
+## - On average, those who stayed tended to earn more than those who left.
+## - This strongly suggests that monthly income is a contributing factor to attrition.
   
 
 ## Check the distribution of monthly income
@@ -193,9 +194,9 @@ hr_cleaned |>
   theme_classic()
 
 ## Comments:
-## - The distributions of both attrition groups are positivelyskewed
-## - There were more proportionally more people who left in the lower end of the monthly income distribution
-## - This adds further support to the earlier analysis that monthly income is a contributor of attrition
+## - The distributions of both attrition groups are positively skewed.
+## - There were more proportionally more people who left in the lower end of the monthly income distribution.
+## - This adds further support to the earlier analysis that monthly income is a contributor of attrition.
 
 
 ## 2. Overtime vs attrition
@@ -237,10 +238,10 @@ hr_cleaned |>
   theme_classic()
 
 ## Comments:
-## - In both overtime conditions, there were more people who stayed than who left
-## - The attrition rate was significantly higher in the overtime condition than in the no-overtime condition
-## - Conversely, the percentage of those who stayed was higher in no-overtime condition than in the overtime condition
-## - This suggests that overtime contributes attrition
+## - In both overtime conditions, there were more people who stayed than who left.
+## - The attrition rate was significantly higher in the overtime condition than in the no-overtime condition.
+## - Conversely, the percentage of those who stayed was higher in no-overtime condition than in the overtime condition.
+## - This suggests that overtime contributes attrition.
 
 
 ## 3. Environment satisfaction vs attrition
@@ -287,9 +288,9 @@ t.test(EnvironmentSatisfaction ~ Attrition,
 ### 2.771290          2.464135 
 
 ## Comments:
-## - There is a significant difference in environment satisfaction between the 2 attrition groups
-## - Those who left tended to be less satisfied with the workplace settings than those who stayed
-## - This suggests that environment satisfaction is likely a contributing factor to attrition
+## - There is a significant difference in environment satisfaction between the 2 attrition groups.
+## - Those who left tended to be less satisfied with the workplace settings than those who stayed.
+## - This suggests that environment satisfaction is likely a contributing factor to attrition.
 
 
 ### Check the effect size
@@ -304,8 +305,8 @@ cohen.d(EnvironmentSatisfaction ~ Attrition,
 ### 0.1429148 0.4219167 
 
 ## Comments:
-## - This suggests that the difference, while statistically significant, may not be as practically important as other factors such as monthly income and overtime
-## - Thus, when tackling attrition, environment satisfaction may be given lower priority
+## - This suggests that the difference, while statistically significant, may not be as practically important as other factors such as monthly income and overtime.
+## - Thus, when tackling attrition, environment satisfaction may be given lower priority.
 
 
 # ------------------------------------------------------
@@ -360,9 +361,9 @@ hr_cleaned |>
   theme_classic()
 
 ## Comments:
-## - All departments have similar percentage of people leaving and staying
-## Notably, however, R&D has lower percent of people leaving and slightly higher percentage of people staying, compared to the other departments
-## Additionally, Sales has the highest percentage of people leaving and lowest percetage of people staying. This suggests that the attrition may have the most impact in Sales.
+## - All departments have similar percentage of people leaving and staying.
+## - Notably, however, R&D has lower percent of people leaving and slightly higher percentage of people staying, compared to the other departments.
+## - Additionally, Sales has the highest percentage of people leaving and lowest percetage of people staying. This suggests that the attrition may have the most impact in Sales.
 
 
 ## Attrition by job role
@@ -413,9 +414,9 @@ hr_cleaned |>
                                    hjust = 1))
 
 ## Comments:
-## - Sales Rep has the highest percentage of attrition
-## - Research Director has the lowest percentage of attrition
-## - Given the job role titles, employees in the lower job levels appear to leave more often
+## - Sales Rep has the highest percentage of attrition.
+## - Research Director has the lowest percentage of attrition.
+## - Given the job role titles, employees in the lower job levels appear to leave more often.
   
 ### Confirm whether job level is associated with attrition
 hr_cleaned |>
@@ -460,8 +461,8 @@ hr_cleaned |>
   theme_classic()
 
 ## Comments:
-## - Job level 1 has the highest attrition percentage, while job levels 4 and 5 have the lowest attrition rate
-## - This supports the earlier notion that people in lower job levels are more likely to leave the company
+## - Job level 1 has the highest attrition percentage, while job levels 4 and 5 have the lowest attrition rate.
+## - This supports the earlier notion that people in lower job levels are more likely to leave the company.
 
 
 # ------------------------------------------------------
@@ -513,9 +514,9 @@ hr_cleaned |>
   theme_classic()
 
 ## Comments:
-## - In both attrition conditions, there were more males than females
-## - Among both gender, there were more people leaving than staying
-## - As the attrition patterns are similar across gender, this variable may contribute very weakly to attrition
+## - In both attrition conditions, there were more males than females.
+## - Among both gender, there were more people leaving than staying.
+## - As the attrition patterns are similar across gender, this variable may contribute very weakly to attrition.
 
 
 ## Age vs attrition
@@ -539,11 +540,11 @@ hr_cleaned |>
   theme_classic()
 
 ## Comments:
-## - Age distributions are similar across attrition conditions
-## - Age distribution for those who stayed is more normally distributed
-## - The peaks are close together
-## - As the peak for those who left leans more towards the left, people who left to be younger
-## - This suggests that age may be a worthwhile predictor of attrition
+## - Age distributions are similar across attrition conditions.
+## - Age distribution for those who stayed is more normally distributed.
+## - The peaks are close together.
+## - As the peak for those who left leans more towards the left, people who left to be younger.
+## - This suggests that age may be a worthwhile predictor of attrition.
 
 
 # ------------------------------------------------------
@@ -571,7 +572,7 @@ glimpse(hr_modelling)
 ## Split the data
 
 ### Set seed for reproducibility
-set.seed(2012)
+set.seed(1853)
 
 ### Define splitting index
 hr_split <- initial_split(hr_modelling,
@@ -629,7 +630,7 @@ rf_wfl <- workflow() |>
 ## Define cross-validation
 
 ### Set seed for reproducibility
-set.seed(2012)
+set.seed(1853)
 
 ### Set CV
 rf_cv <- vfold_cv(hr_train,
@@ -639,7 +640,7 @@ rf_cv <- vfold_cv(hr_train,
 ## Define tune grid
 
 ### Set seed for reproducibility
-set.seed(2012)
+set.seed(1853)
 
 ### Define the grid
 rf_grid <- grid_random(mtry(range = c(5, 10)),
@@ -655,13 +656,17 @@ rf_metrics <- metric_set(accuracy,
 ## Tune the model
 
 ### Set seed for reproducibility
-set.seed(2012)
+set.seed(1853)
 
 ### Tune
 system.time({rf_tune <- tune_grid(rf_wfl,
                                   resamples = rf_cv,
                                   grid = rf_grid,
                                   metrics = rf_metrics)})
+
+#    user  system elapsed 
+#  183.42    2.81  370.84 
+
 
 ## Select the best hyperparametres
 rf_best_hp <- select_best(rf_tune,
@@ -684,21 +689,21 @@ rf_predictions <- collect_predictions(rf_wkl_fit)
 rf_predictions
 
 # # A tibble: 295 × 7
-#   .pred_class .pred_Yes .pred_No id           .row Attrition
-#   <fct>           <dbl>    <dbl> <chr>       <int> <fct> 
-#  1 No              0.058    0.942 train/test…    10 No       
-#  2 No              0.138    0.862 train/test…    11 No       
-#  3 No              0.474    0.526 train/test…    18 No       
-#  4 No              0.136    0.864 train/test…    29 No       
-#  5 No              0.08     0.92  train/test…    40 No       
-#  6 No              0.29     0.71  train/test…    42 No       
-#  7 No              0.108    0.892 train/test…    45 No       
-#  8 No              0.116    0.884 train/test…    47 No       
-#  9 No              0.158    0.842 train/test…    48 No       
-# 10 No              0.198    0.802 train/test…    62 No 
-# ℹ 285 more rows
-# ℹ 1 more variable: .config <chr>
-# ℹ Use `print(n = ...)` to see more rows
+#   .pred_class .pred_Yes .pred_No id     .row Attrition
+#   <fct>           <dbl>    <dbl>  <chr> <int> <fct>    
+#   1 No            0.314     0.686 trai…     1 Yes      
+#   2 No            0.230     0.770 trai…     5 No       
+#   3 No            0.0934    0.907 trai…    10 No       
+#   4 No            0.156     0.844 trai…    22 Yes      
+#   5 No            0.368     0.632 trai…    24 No       
+#   6 No            0.0387    0.961 trai…    28 No       
+#   7 No            0.239     0.761 trai…    33 No       
+#   8 No            0.343     0.657 trai…    43 Yes      
+#   9 No            0.142     0.858 trai…    47 No       
+#  10 No            0.0560    0.944 trai…    54 No       
+# # ℹ 285 more rows
+# # ℹ 1 more variable: .config <chr>
+# # ℹ Use `print(n = ...)` to see more rows
 
 
 ## Create a confusion matrix
@@ -709,10 +714,10 @@ rf_conf_mat <- conf_mat(rf_predictions,
 ## Print the confusion matrix
 rf_conf_mat
 
-#           Truth
+#            Truth
 # Prediction Yes  No
-#       Yes    9   2
-#       No    39 245
+#        Yes   3   2
+#        No   45 245
 
 
 ## Collect metrics
@@ -723,11 +728,11 @@ rf_perf_results
 
 # A tibble: 4 × 4
 #   .metric   .estimator .estimate .config             
-#   <chr>     <chr>          <dbl> <chr>               
-# 1 accuracy  binary         0.861 Preprocessor1_Model1
-# 2 recall    binary         0.188 Preprocessor1_Model1
-# 3 precision binary         0.818 Preprocessor1_Model1
-# 4 roc_auc   binary         0.811 Preprocessor1_Model1
+#   <chr>     <chr>          <dbl>  <chr>               
+# 1 accuracy  binary         0.841  Preprocessor1_Model1
+# 2 recall    binary         0.0625 Preprocessor1_Model1
+# 3 precision binary         0.6    Preprocessor1_Model1
+# 4 roc_auc   binary         0.784  Preprocessor1_Model1
 
 
 ## Plot ROC curve
@@ -735,6 +740,12 @@ roc_curve(rf_predictions,
           truth = Attrition,
           .pred_Yes) |> 
   autoplot()
+
+## Comments:
+## - The model has high accuracy (84%) but very low recall (6%).
+## - For attrition, it is better to have high recall as the company will be better at identifying people who are likely to leave despite incorrectly identifying people who are not leaving as likely to leave.
+## - Low recall is likely due to class imbalance as there are only 16% of positive class and 84% negative class.
+## - To increase recall, we may train the model with upsampling where positive class is duplicated so that there are the same number of observations for both positive and negative class.
 
 
 # ------------------------------------------------------
@@ -745,7 +756,7 @@ roc_curve(rf_predictions,
 ## Create a model recipe
 
 ### Set seed for reproducibility
-set.seed(9000)
+set.seed(1853)
 
 ### Create the recipe
 rf_rec_1 <- recipe(Attrition ~ .,
@@ -781,41 +792,45 @@ rf_wfl_1 <- workflow() |>
 ## Define cross-validation
 
 ### Set seed for reproducibility
-set.seed(9000)
+set.seed(1853)
 
 ### Set CV
-rf_cv <- vfold_cv(hr_train,
-                  v = 10,
-                  strata = Attrition)
+rf_cv_1 <- vfold_cv(hr_train,
+                    v = 10,
+                    strata = Attrition)
 
 ## Define tune grid
 
 ### Set seed for reproducibility
-set.seed(9000)
+set.seed(1853)
 
 ### Define the grid
-rf_grid <- grid_random(mtry(range = c(5, 10)),
-                       min_n(range = c(1, 25)),
-                       size = 30)
+rf_grid_1 <- grid_random(mtry(range = c(5, 10)),
+                         min_n(range = c(1, 25)),
+                         size = 30)
 
 ## Tune the model
 
 ### Set seed for reproducibility
-set.seed(9000)
+set.seed(1853)
 
 ### Tune
 system.time({rf_tune_1 <- tune_grid(rf_wfl_1,
-                                    resamples = rf_cv,
-                                    grid = rf_grid,
+                                    resamples = rf_cv_1,
+                                    grid = rf_grid_1,
                                     metrics = rf_metrics)})
+
+#    user  system elapsed 
+#  414.33    2.93  697.90
+
 
 ## Select the best hyperparametres
 rf_best_hp_1 <- select_best(rf_tune_1,
                             metric = "recall")
 
 ## Apply the best hyperparametres
-rf_wfl_final_1 <- finalize_workflow(rf_wfl,
-                                  rf_best_hp_1)
+rf_wfl_final_1 <- finalize_workflow(rf_wfl_1,
+                                    rf_best_hp_1)
 
 ## Fit the model
 rf_wkl_fit_1 <- last_fit(rf_wfl_final_1,
@@ -829,6 +844,23 @@ rf_predictions_1 <- collect_predictions(rf_wkl_fit_1)
 ## Print predictions
 rf_predictions_1
 
+# # A tibble: 295 × 7
+#     .pred_class .pred_Yes .pred_No id            .row Attrition .config
+#     <fct>           <dbl>    <dbl> <chr>        <int> <fct>     <chr>  
+#   1 No             0.442     0.558 train/test …     1 Yes       Prepro…
+#   2 No             0.467     0.533 train/test …     5 No        Prepro…
+#   3 No             0.129     0.871 train/test …    10 No        Prepro…
+#   4 No             0.260     0.740 train/test …    22 Yes       Prepro…
+#   5 No             0.492     0.508 train/test …    24 No        Prepro…
+#   6 No             0.0634    0.937 train/test …    28 No        Prepro…
+#   7 No             0.314     0.686 train/test …    33 No        Prepro…
+#   8 Yes            0.522     0.478 train/test …    43 Yes       Prepro…
+#   9 No             0.239     0.761 train/test …    47 No        Prepro…
+#  10 No             0.120     0.880 train/test …    54 No        Prepro…
+# # ℹ 285 more rows
+# # ℹ Use `print(n = ...)` to see more rows
+
+
 
 ## Create a confusion matrix
 rf_conf_mat_1 <- conf_mat(rf_predictions_1,
@@ -840,8 +872,8 @@ rf_conf_mat_1
 
 #           Truth
 # Prediction Yes  No
-#        Yes  20  14
-#        No   28 233
+#        Yes  13  4
+#        No   35 243
 
 
 ## Collect metrics
@@ -852,11 +884,11 @@ rf_perf_results_1
 
 # # A tibble: 4 × 4
 # .metric   .estimator .estimate .config             
-# <chr>     <chr>          <dbl> <chr>               
-# 1 accuracy  binary       0.858 Preprocessor1_Model1
-# 2 recall    binary       0.417 Preprocessor1_Model1
-# 3 precision binary       0.588 Preprocessor1_Model1
-# 4 roc_auc   binary       0.810 Preprocessor1_Model1
+#   <chr>     <chr>        <dbl> <chr>               
+# 1 accuracy  binary       0.868 Preprocessor1_Model1
+# 2 recall    binary       0.271 Preprocessor1_Model1
+# 3 precision binary       0.765 Preprocessor1_Model1
+# 4 roc_auc   binary       0.768 Preprocessor1_Model1
 
 
 ## Plot ROC curve
@@ -888,13 +920,13 @@ important_predictors <- c("MonthlyIncome",
                           "OverTime_Yes",
                           "Age",
                           "YearsWithCurrManager",
-                          "JobSatisfaction")
+                          "MaritalStatus_Single")
 
 ### For-loop through the vector
 for (predictor in important_predictors) {
   
   #### Plot the relationship between predictor and attrition
-  pd <- partial(rf_final_model$fit,
+  pd <- partial(rf_final_model_1$fit,
                 pred.var = predictor,
                 train = juice(prep(rf_rec)))
   
@@ -907,18 +939,18 @@ for (predictor in important_predictors) {
 
 
 ## Comments:
-## - We can predict attrition with around 85% accuracy
-## - The model shows a balance between true positive and false positive rates as ROC AUC is 81%
-## - The model, however, falters with recall of just almost 42%
-## - This is likely due to class imbalance in attrition as around 84% is "No" and 16% "Yes"
-## - The model improvement will likely benefit from future with more positive attrition instances
+## - We can predict attrition with almost 87% accuracy.
+## - The model shows a balance between true positive and false positive rates as ROC AUC is 81%.
+## - The model, however, falters with recall of just almost 27%.
+## - This is likely due to class imbalance in attrition as around 84% is "No" and 16% "Yes".
+## - The model improvement will likely benefit from future with more positive attrition instances.
 
 ## Based on the current model, the five most important predictors are:
 ## (1) Monthly income
 ## (2) Overtime (yes)
 ## (3) Age
 ## (4) Years with current manager
-## (5) Job satisfaction
+## (5) Marital status (single)
 
 
 ## Predictor 1. Monthly income
@@ -949,9 +981,10 @@ for (predictor in important_predictors) {
 ## - Second, years with current managers may reflect stagnation in the employees' career, which may in turn motivate employees to seek career growth elsewhere.
 
 
-## Predict 5. Job satisfaction
-## Relationship with attrition: almost linear (negative)
-## - This predictor is intuitive in that people who are less satified with their jobs are more likely to leave the company.
+## Predict 5. Marital status (single)
+## Relationship with attrition: linear
+## - This predictor is peculiar. It suggests that people who are single are more likely to leave.
+## - An interpretation is that single employees may have fewer constraints in leaving the company. Unlike their married counterpart, these employees may have fewer obligations that motivate them to stay with their current jobs. Thus, they are more likely to leave the company.
 
 
 ## Recommendations based on the model
@@ -974,5 +1007,5 @@ for (predictor in important_predictors) {
 ## Recommendation 2: If years with current managers reflect , Communicate clear career path to the employees to ensure that they are aware of the opportunities for professional growth.
 
 
-## Predictor 5. Job satisfaction
-## Recommendation 1: Happy employees are less likely to leave. The company may consider implementing certain policy to ensure the emotional well-being of employees. If employees are not satisfied with of job-related stress, the company may, for example, consider contracting outsource psychologists to provide on-site or online counselling services to the employees.
+## Predictor 5. Marital status (single)
+## Recommendation 1: Any policy that tackles attrition may place more emphasis on employees who are single, especially if they are talent. Such policy may provide these employees with clear career path and benefits to keep them from taking the risk of finding new opportunities elsewhere. 
