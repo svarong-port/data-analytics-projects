@@ -95,7 +95,8 @@ anyNA(hr_cleaned)
 hr_cleaned |>
   
   ### Group and count by attrition
-  count(Attrition, name = "Count") |>
+  count(Attrition, 
+        name = "Count") |>
   
   ### Compute percentage
   mutate(Percent = round(Count / sum(Count) * 100, 2))
