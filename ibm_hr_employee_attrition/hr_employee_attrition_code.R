@@ -610,10 +610,7 @@ rf_rec <- recipe(Attrition ~ .,
             threshold = 0.7) |>
   
   ### Dummy encode categorical predictors
-  step_dummy(all_nominal_predictors()) |>
-  
-  ### Normalise numeric predictors
-  step_normalize(all_numeric_predictors())
+  step_dummy(all_nominal_predictors())
 
 
 ## Bundle model and recipe
@@ -767,9 +764,6 @@ rf_rec_1 <- recipe(Attrition ~ .,
   
   ### Dummy encode categorical predictors
   step_dummy(all_nominal_predictors()) |>
-  
-  ### Normalise numeric predictors
-  step_normalize(all_numeric_predictors()) |>
   
   ### Oversample the outcome
   step_upsample(Attrition)
