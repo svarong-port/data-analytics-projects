@@ -1165,7 +1165,6 @@ for (predictor in important_predictors) {
 ## Relationship with attrition: resembling U shape
 ## - This predictor is also not surprising as employment is a transactional relationship.
 ## - If employees feel the financial return is not sufficient for their effort, they may leave in search of a more satisfying contract.
-## - Additionally, at a certain point, being paid more may lead employees to seek new opportunities where they may be able to earn even more.
 
 
 ## Predictor 2. Overtime (yes)
@@ -1175,7 +1174,7 @@ for (predictor in important_predictors) {
 
 
 ## Predictor 3. Age
-## Relationship with attrition: resembling U shape
+## Relationship with attrition: resembling L shape
 ## - The relationship between this predictor and attrition suggests that younger people are more likely to leave.
 ## - As they age, they become less likely to leave, up to a certain point.
 ## - After that, they become more likely to leave, but not as likely as their younger counterparts.
