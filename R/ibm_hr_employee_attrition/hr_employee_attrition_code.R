@@ -220,7 +220,8 @@ hr_cleaned |>
   group_by(OverTime, Attrition) |>
   
   ### Count the observations in each group
-  summarise(Count = n(), .groups = "drop") |>
+  summarise(Count = n(),
+            .groups = "drop") |>
   
   ### Group by overtime
   group_by(OverTime) |>
@@ -337,7 +338,8 @@ hr_cleaned |>
   group_by(Department, Attrition) |>
   
   ### Count the number of observations
-  summarise(Count = n(), .groups = "drop") |>
+  summarise(Count = n(),
+            .groups = "drop") |>
   
   ### Group by department
   group_by(Department) |>
@@ -442,7 +444,7 @@ hr_cleaned |>
   
   #### Ungroup
   ungroup() |>
-
+  
   #### Aesthetic mapping
   ggplot(aes(x = JobLevel,
              y = AttritionRate,
@@ -487,7 +489,8 @@ hr_cleaned |>
   group_by(Gender, Attrition) |>
   
   ### Count the number of observations
-  summarise(Count = n(), .groups = "drop") |>
+  summarise(Count = n(),
+            .groups = "drop") |>
   
   ### Group by gender
   mutate(Percent = Count / sum(Count) * 100) |>
@@ -844,7 +847,7 @@ rf_pred_prob_1 <- predict(rf_wkl_fit_1,
 rf_pred_class_1 <- predict(rf_wkl_fit_1,
                            new_data = hr_test,
                            type = "class")
-  
+
 ### Combine the results
 rf_predictions_1 <- tibble(actual = hr_test$Attrition,
                            predicted = rf_pred_class_1$.pred_class,
@@ -907,7 +910,9 @@ roc_auc(rf_predictions_1,
 # Calibrate the model performance by adjust the threshold for predicting positive class
 
 ## Define a set of threshold
-thresholds <- seq(0.1, 0.9, by = 0.1)
+thresholds <- seq(0.1,
+                  0.9,
+                  by = 0.1)
 
 
 ## Create empty vectors to store results from a for loop
@@ -954,7 +959,7 @@ for (i in 1:length(thresholds)) {
                              estimate = predicted,
                              event_level = "first") |>
     pull(.estimate)
-
+  
   
   ### Count all cases
   all[i] <- nrow(predictions)
