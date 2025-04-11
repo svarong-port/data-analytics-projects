@@ -667,6 +667,28 @@ system.time({rf_tune <- tune_grid(rf_wfl,
 #  183.42    2.81  370.84 
 
 
+## Show the best hyperparametres
+
+### Define the metrics
+metrics <- c("accuracy",
+             "precision",
+             "recall",
+             "roc_auc")
+
+### For-loop through the metrics
+for (metric in metrics) {
+  
+  ## Get best hyperparametres
+  best <- show_best(rf_tune,
+                    metric = metric)
+  
+  ## Print the results
+  print(paste(metric, ":"))
+  print(best)
+  print("----------------------------------------------")
+}
+
+
 ## Select the best hyperparametres
 rf_best_hp <- select_best(rf_tune,
                           metric = "recall")
@@ -717,24 +739,17 @@ rf_perf_results
 # 4 roc_auc   binary         0.784  Preprocessor1_Model1
 
 
-## Plot ROC curve
-roc_curve(rf_predictions,
-          truth = Attrition,
-          .pred_Yes) |> 
-  autoplot()
-
 ## Comments:
-## - The model has high accuracy (84%) but very low recall (6%).
-## - For attrition, it is better to have high recall as the company will be better at identifying people who are likely to leave despite incorrectly identifying people who are not leaving as likely to leave.
-## - Low recall is likely due to class imbalance as there are only 16% of positive class and 84% negative class.
-## - To increase recall, we may train the model with upsampling where positive class is duplicated so that there are the same number of observations for both positive and negative class.
+## - While this initial model shows relatively high accuracy (84%), its recall is extremely poor (6%).
+## - This suggests that the model is very adept at correctly identifying people who are staying but performs poorly when it comes to identifying people who are leaving.
+## - This is clearly shown in the confusion matrix, where, when predicting with the negative class, the model correctly classified 245 out of 247 cases. In contrast, the model correctly identified only 3 out of 48 positive class instances.
+## - Next, I will try to improve the model by using downsampling and upsampling methods when tuning and training the model.
 
 
 # ------------------------------------------------------
 
 
 # Refit the model with upsampling step added
-
 
 ## Instantiate a random forest model
 rf_model_1 <- rand_forest(mtry = tune(),
@@ -768,7 +783,10 @@ rf_rec_1 <- recipe(Attrition ~ .,
   ### Dummy encode categorical predictors
   step_dummy(all_nominal_predictors()) |>
   
-  ### Oversample the outcome
+  ### Downsampling
+  step_downsample(Attrition) |>
+  
+  ### Oversampling
   step_upsample(Attrition)
 
 
@@ -820,88 +838,102 @@ system.time({rf_tune_1 <- tune_grid(rf_wfl_1,
                                     metrics = rf_metrics_1)})
 
 #    user  system elapsed 
-#  414.33    2.93  697.90
+#   31.09    0.94  102.76
+
+
+## Show the best hyperparametres
+
+### Define the metrics
+metrics_1 <- c("accuracy",
+               "precision",
+               "recall",
+               "roc_auc")
+
+### For-loop through the metrics
+for (metric in metrics_1) {
+  
+  #### Get best hyperparametres
+  best <- show_best(rf_tune_1,
+                    metric = metric)
+  
+  #### Print the results
+  print(paste(metric, ":"))
+  print(best)
+  print("----------------------------------------------")
+}
 
 
 ## Select the best hyperparametres
 rf_best_hp_1 <- select_best(rf_tune_1,
-                            metric = "recall")
+                            metric = "precision")
 
 ## Apply the best hyperparametres
 rf_wfl_final_1 <- finalize_workflow(rf_wfl_1,
                                     rf_best_hp_1)
 
 ## Fit the model
-rf_wkl_fit_1 <- fit(rf_wfl_final_1,
-                    data = hr_train)
+rf_wkl_fit_1 <- last_fit(rf_wfl_final_1,
+                         hr_split,
+                         metrics = rf_metrics_1)
 
 
-## Make predictions
+## Collect predictions
 
-### Get prediction probabilities
-rf_pred_prob_1 <- predict(rf_wkl_fit_1,
-                          new_data = hr_test,
-                          type = "prob")
-
-### Get predicted classes
-rf_pred_class_1 <- predict(rf_wkl_fit_1,
-                           new_data = hr_test,
-                           type = "class")
-
-### Combine the results
-rf_predictions_1 <- tibble(actual = hr_test$Attrition,
-                           predicted = rf_pred_class_1$.pred_class,
-                           pred_yes = rf_pred_prob_1$.pred_Yes,
-                           pred_no = rf_pred_prob_1$.pred_No)
+### Collect predictions
+rf_predictions_1 <- collect_predictions(rf_wkl_fit_1)
 
 ### Print the results
 head(rf_predictions_1)
 
 
 ## Create a confusion matrix
-rf_conf_mat_1 <- conf_mat(rf_predictions_1,
-                          truth = actual,
-                          estimate = predicted)
 
-## Print the confusion matrix
+### Create a confusion matrix
+rf_conf_mat_1 <- conf_mat(rf_predictions_1,
+                          truth = Attrition,
+                          estimate = .pred_class)
+
+### Print the confusion matrix
 rf_conf_mat_1
 
 #            Truth
 # Prediction Yes  No
-#        Yes  11   4
-#        No   37 243
+#        Yes  31  55
+#        No   17 192
 
 
 ## Get metrics
-summary(rf_conf_mat_1)
 
-# # A tibble: 13 × 3
-#     .metric              .estimator .estimate
-#     <chr>                <chr>          <dbl>
-#   1 accuracy             binary        0.861 
-#   2 kap                  binary        0.295 
-#   3 sens                 binary        0.229  
-#   4 spec                 binary        0.984 
-#   5 ppv                  binary        0.733  
-#   6 npv                  binary        0.868  
-#   7 mcc                  binary        0.358 
-#   8 j_index              binary        0.213  
-#   9 bal_accuracy         binary        0.606  
-#  10 detection_prevalence binary        0.0508
-#  11 precision            binary        0.733
-#  12 recall               binary        0.229  
-#  13 f_meas               binary        0.349  
+### Collect metrics
+rf_perf_results_1 <- collect_metrics(rf_wkl_fit_1)
 
-## Plot ROC curve
-roc_curve(rf_predictions_1,
-          truth = actual,
-          pred_yes) |> 
-  autoplot()
+### Print metrics
+rf_perf_results_1
+
+# # A tibble: 4 × 4
+#   .metric   .estimator .estimate .config             
+#   <chr>     <chr>          <dbl> <chr>               
+# 1 accuracy  binary         0.756 Preprocessor1_Model1
+# 2 recall    binary         0.646 Preprocessor1_Model1
+# 3 precision binary         0.360 Preprocessor1_Model1
+# 4 roc_auc   binary         0.775 Preprocessor1_Model1
+
 
 ## Compute ROC AUC
 roc_auc(rf_predictions_1,
-        truth = actual,
-        pred_yes)
+        truth = Attrition,
+        .pred_Yes)
+
+# # A tibble: 1 × 3
+#   .metric .estimator .estimate
+#   <chr>   <chr>          <dbl>
+# 1 roc_auc binary         0.775
+
+## Comments:
+##  - The downsampling and upsampling methods significantly improves the model's recall from 6% up to 64%.
+## - However, this comes at a cost to the other performance aspects.
+## - Specifically, accuracy decreased froom 84% to 75%, precision from 60% to 36%, and ROC AUC from 78% to 77%.
+## - While this is remarkable improvement, the model may be further ehanced by adjusting the prediction threshold.
 
 
 # ------------------------------------------------------
@@ -937,7 +969,7 @@ true_positives <- numeric(length(thresholds))
 for (i in 1:length(thresholds)) {
   
   ### Make predictions with the threshold
-  new_pred <- if_else(rf_predictions_1$pred_yes > thresholds[i],
+  new_pred <- if_else(rf_predictions_1$.pred_Yes > thresholds[i],
                       "Yes",
                       "No")
   
@@ -999,27 +1031,27 @@ thres_results
 
 ## Plot threshold vs recall and precision
 
-### Recall
+### Precision
 plot(thres_results$threshold,
-     thres_results$recall,
+     thres_results$precision,
      type = "b",
-     main = "Recall & Precision vs Threshold",
+     main = "Precision & Recall vs Threshold",
      xlab = "Threshold",
      ylab = "Score",
      col = "blue",
      pch = 16,
      ylim = c(0, 1))
 
-### Precision
+### Recall
 lines(thres_results$threshold,
-      thres_results$precision,
+      thres_results$recall,
       type = "b",
       col = "red",
       pch = 17)
 
 ### Add a legend
 legend("topright",
-       legend = c("Recall", "Precision"),
+       legend = c("Precision", "Recall"),
        col = c("blue", "red"),
        pch = c(16, 17),
        lty = 1)
@@ -1029,17 +1061,17 @@ legend("topright",
 ## - Although we are prioritising recall to identify potential leavers, a high recall means we will also incorrectly classify employees who are staying as leavers.
 ## - A high number of false positives, while beneficial for retaining the company's talent, could lead to additional costs as resources are allocated to employees who are staying, instead of those who are leaving.
 ## - As such, while we emphasize recall, this should not come at too great a cost to precision.
-## - Given this reasoning, I have chosen a threshold of 0.4, as it represents a good balance between recall and precision. Specifically, this threshold allows us to flag 33 employees out of 295, of which 20 are true positives.
-## - If we adjust the threshold to 0.3, we would flag about twice as many (77 employees), but less than half of them (28) would be true positives.
-## - With threshold of 0.4, the company would be able to identify a small yet concentrated number of employees who are likely to leave and will benefit from any invested intervention.
+## - Given this reasoning, I have chosen a threshold of 0.6, as it represents a good balance between recall and precision. Specifically, this threshold allows us to flag 37 employees out of 295, of which 20 are true positives.
+## - If we adjust the threshold to 0.5, we would flag about twice as many (86 employees), but less than half of them (31) would be true positives.
+## - With threshold of 0.6, the company would be able to identify a small yet concentrated number of employees who are likely to leave and will benefit from any invested intervention.
 
 
 ## Select the threshold
-selected_thres <- 0.4
+selected_thres <- 0.6
 
 
-## Make poredictions with threshold = 0.4
-rf_final_pred <- if_else(rf_predictions_1$pred_yes > selected_thres,
+## Make poredictions with threshold = 0.6
+rf_final_pred <- if_else(rf_predictions_1$.pred_Yes > selected_thres,
                          "Yes",
                          "No")
 
@@ -1056,6 +1088,23 @@ rf_final_conf_mat <- conf_mat(rf_final_results,
 
 ## Get metrics
 summary(rf_final_conf_mat)
+
+# # A tibble: 13 × 3
+#   .metric               .estimator .estimate
+#   <chr>                 <chr>          <dbl>
+# 1 accuracy              binary         0.847
+# 2 kap                   binary         0.383
+# 3 sens                  binary         0.417
+# 4 spec                  binary         0.931
+# 5 ppv                   binary         0.541
+# 6 npv                   binary         0.891
+# 7 mcc                   binary         0.388
+# 8 j_index               binary         0.348
+# 9 bal_accuracy          binary         0.674
+# 10 detection_prevalence binary         0.125
+# 11 precision            binary         0.541
+# 12 recall               binary         0.417
+# 13 f_meas               binary         0.471
 
 
 # ------------------------------------------------------
@@ -1140,7 +1189,7 @@ for (predictor in important_predictors) {
 
 
 ## Predictor 5. Environment satisfaction
-## Relationship with attrition: relatively linear (negative)
+## Relationship with attrition: resembling L shape
 ## - This predictor is in line with the two-factor theory, which states that part of employees' motivation stems from the work environment.
 ## - The direction of the relationship suggests that the less satisfied the employees are with their environment, the more likely they are to leave.
 
