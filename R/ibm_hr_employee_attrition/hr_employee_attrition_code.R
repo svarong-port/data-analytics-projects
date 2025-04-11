@@ -918,19 +918,19 @@ thresholds <- seq(0.1,
 ## Create empty vectors to store results from a for loop
 
 ### Recall values
-recalls <- numeric(9)
+recalls <- numeric(length(thresholds))
 
 ### Precision values
-precisions <- numeric(9)
+precisions <- numeric(length(thresholds))
 
 ### The number of all cases
-all <- numeric(9)
+all <- numeric(length(thresholds))
 
 ### The number of all positive classes
-all_positives <- numeric(9)
+all_positives <- numeric(length(thresholds))
 
 ### The number of true positives
-true_positives <- numeric(9)
+true_positives <- numeric(length(thresholds))
 
 
 ## Create a for loop to loop through the thresholds
