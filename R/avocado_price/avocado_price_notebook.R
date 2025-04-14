@@ -78,7 +78,8 @@ glimpse(avd_cleaned)
 avd_cleaned <- avd_cleaned |>
   
   ### Convert to factor
-  mutate(across(where(is.character), as.factor))
+  mutate(across(where(is.character),
+                as.factor))
 
 ## Check the results
 glimpse(avd_cleaned)
