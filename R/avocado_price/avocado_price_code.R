@@ -3,7 +3,7 @@
 ## Prepared by
 ## Author: Shinin Varongchayakul
 ## Date: 15 Apr 2025
-## Langauge: R
+## Language: R
 
 ## Dataset
 ## Name: Avocado Price
@@ -15,7 +15,7 @@
 
 
 ## Business Problems
-## A grocery retail chain wants to optimise their avocado pricing as avacado is one of the ir best-selling items.
+## A grocery retail chain wants to optimise their avocado pricing as avocado is one of their best-selling items.
 ## They want to understand:
 ## - What factors influence avocado price
 ## - How the price changes over time
@@ -171,6 +171,10 @@ anyNA(avd_cleaned)
 
 ## 3.1 Overview
 
+## See summary stats
+summary(avd_cleaned)
+
+
 ## Visualise the distribution of `AveragePrice`
 avd_cleaned |>
   
@@ -188,12 +192,8 @@ avd_cleaned |>
 
 ## Comments:
 ## - The distribution appears normally distributed.
-## - This is in line with the summary() results which shows that median (1.360) and mean (1.391) are very close to one another.
+## - This is in line with the `summary()` results which shows that median (1.360) and mean (1.391) are very close to one another.
 
-
-## See summary stats
-summary(avd_cleaned)
-  
 
 ## Create a correlation matrix
 avd_cleaned |>
@@ -215,6 +215,7 @@ avd_cleaned |>
 ## - `year` shows the weakest correlation at 0.08.
 ## - `X4046` shows the strongest correlation at -0.21.
 ## - The magnitude of the correlations suggest that price may stem from a combination of factors, rather than any single factor alone.
+## - Additionally, many factors overlap greatly, for example, `Total.Volume` and other factor related to the number of sales such as `X4046`. 
 
 
 ## 3.2 Price vs time
@@ -272,7 +273,10 @@ avd_cleaned |>
              y = MeanPrice,
              fill = month)) +
   
-  ## Instantiate a line plot
+  ## Instantiate a bar plot
+  geom_col() +
+  
+  ## Add a trend line
   geom_line(aes(group = 1),
             color = "red",
             linewidth = 1) +
@@ -294,7 +298,7 @@ avd_cleaned |>
 ## Comments:
 ## - The lowest price is in February, at 1.27 USD.
 ## - The highest price is in October, at 1.58 USD.
-## - Throughout a year, the average price rises steadily, dripping twice, in February and May, until reaching a peak in Octobe and then drops steadiy for the rest of the year.
+## - Throughout a year, the average price rises steadily, dipping twice, in February and May, until reaching a peak in October and then drops steadily for the rest of the year.
 
 
 ## 3.3 Price vs region
@@ -319,7 +323,7 @@ avd_cleaned |>
              y = MeanPrice,
              fill = Region.Group)) +
   
-  ## Instantiate a line plot
+  ## Instantiate a bar plot
   geom_col() +
   
   ## Add annotation
@@ -337,8 +341,8 @@ avd_cleaned |>
   theme_minimal()
 
 ## Comments:
-## - Northwest region has the highest price on average (1.57 USD).
-## - The other regins have similar pricing levels (between 1.32 and 1.39 USD).
+## - Northeast region has the highest price on average (1.57 USD).
+## - The other regions have similar pricing levels (between 1.32 and 1.39 USD).
 
 
 ## 3.4 Price vs type
@@ -487,3 +491,118 @@ avd_cleaned |>
 ## Comments:
 ## - The relationship between pricing and volume is simiar across pricing strategy.
 ## - This suggests that pricing strategy may not be a moderator of this relationship.
+
+
+## 3.6 Explore potential interaction effects
+
+## 3.6.1 Pricing strategy vs region
+avd_cleaned |>
+  
+  ## Group by type and major region
+  group_by(type, Region.Group) |>
+  
+  ## Compute mean price per type
+  summarise(MeanPrice = mean(AveragePrice),
+            .groups = "drop") |>
+  
+  ## Aesthetic mapping
+  ggplot(aes(x = type,
+             y = MeanPrice,
+             fill = type)) +
+  
+  ## Instantiate a line plot
+  geom_col() +
+  
+  ## Add text elements
+  labs(title = "Avocado Price by Pricing Strategy",
+       x = "Pricing Strategy",
+       y = "Average Price") +
+  
+  ## Adjust theme to minimal
+  theme_minimal() +
+  
+  ## Facet by region
+  facet_wrap(~ Region.Group)
+
+## Comments:
+## - Across all regions, organic pricing is consistently associated with higher price.
+## - This suggests that there is no interaction effect between pricing strategy and region on pricing.
+
+
+## 3.6.1 Pricing strategy vs month
+avd_cleaned |>
+  
+  ## Group by type and major region
+  group_by(type, month) |>
+  
+  ## Compute mean price per type
+  summarise(MeanPrice = mean(AveragePrice),
+            .groups = "drop") |>
+  
+  ## Aesthetic mapping
+  ggplot(aes(x = type,
+             y = MeanPrice,
+             fill = type)) +
+  
+  ## Instantiate a line plot
+  geom_col() +
+  
+  ## Add text elements
+  labs(title = "Avocado Price by Pricing Strategy",
+       x = "Pricing Strategy",
+       y = "Average Price") +
+  
+  ## Adjust theme to minimal
+  theme_minimal() +
+  
+  ## Facet by region
+  facet_wrap(~ month)
+
+## Comments:
+## - Across all months, organic pricing is consistently associated with higher price.
+## - This suggests that there is no interaction effect between pricing strategy and month on pricing.
+
+
+# ----------------------------------------------------------------
+
+
+# 4. Building a Predictive Model
+
+## I will build two models, compare their performance, then choose the better performing one.
+## The models are linear regression and random forest.
+## Both are chosen due to their explainability.
+
+## 4.1 Prepare the data
+
+## Create splitting index
+avd_split <- initial_split(avd_cleaned,
+                           prop = 0.8,
+                           strata = AveragePrice)
+
+## Create a training set
+avd_train <- training(avd_split)
+
+## Create a test set
+avd_test <- testing(avd_split)
+
+## Check the results
+cat("Training set:", nrow(avd_train), "\n")
+cat("Test set:", nrow(avd_test))
+
+
+## 4.2 Define a recipe
+avd_recipe <- recipe(AveragePrice ~ .,
+                     avd_train) |>
+  
+  ## Normalise all numeric variables
+  step_normalize(all_numeric()) |>
+  
+  ## Handle multicollinearity
+  step_corr(all_numeric_predictors(),
+            threshold = 0.7) |>
+  
+  ## Dummy-encode nominal variables
+  step_dummy(all_nominal()) |>
+  
+  ## Remove redundant variables
+  step_rm("Date", "region")
