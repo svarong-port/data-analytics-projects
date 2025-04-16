@@ -648,8 +648,8 @@ rf_grid <- grid_random(mtry(range = c(5, 10)),
 
 ## Define tune metrics
 rf_metrics <- metric_set(accuracy,
-                         recall,
                          precision,
+                         recall,
                          roc_auc)
 
 ## Tune the model
@@ -662,9 +662,6 @@ system.time({rf_tune <- tune_grid(rf_wfl,
                                   resamples = rf_cv,
                                   grid = rf_grid,
                                   metrics = rf_metrics)})
-
-#    user  system elapsed 
-#  183.42    2.81  370.84 
 
 
 ## Show the best hyperparametres
@@ -685,7 +682,7 @@ for (metric in metrics) {
   ## Print the results
   print(paste(metric, ":"))
   print(best)
-  print("----------------------------------------------")
+  print("------------------------------------------------------------------------")
 }
 
 
@@ -698,6 +695,11 @@ rf_wfl_final <- finalize_workflow(rf_wfl,
                                   rf_best_hp)
 
 ## Fit the model
+
+### Set seed for reproducibility
+set.seed(1853)
+
+### Fit
 rf_wkl_fit <- last_fit(rf_wfl_final,
                        split = hr_split,
                        metrics = rf_metrics)
@@ -720,7 +722,7 @@ rf_conf_mat
 
 #            Truth
 # Prediction Yes  No
-#        Yes   3   2
+#        Yes   4   2
 #        No   45 245
 
 
@@ -733,16 +735,16 @@ rf_perf_results
 # A tibble: 4 × 4
 #   .metric   .estimator .estimate .config             
 #   <chr>     <chr>          <dbl>  <chr>               
-# 1 accuracy  binary         0.841  Preprocessor1_Model1
-# 2 recall    binary         0.0625 Preprocessor1_Model1
-# 3 precision binary         0.6    Preprocessor1_Model1
-# 4 roc_auc   binary         0.784  Preprocessor1_Model1
+# 1 accuracy  binary         0.844  Preprocessor1_Model1
+# 2 precision binary         0.666 Preprocessor1_Model1
+# 3 recall    binary         0.083  Preprocessor1_Model1
+# 4 roc_auc   binary         0.782  Preprocessor1_Model1
 
 
 ## Comments:
-## - While this initial model shows relatively high accuracy (84%), its recall is extremely poor (6%).
+## - While this initial model shows relatively high accuracy (84%), its recall is extremely poor (8%).
 ## - This suggests that the model is very adept at correctly identifying people who are staying but performs poorly when it comes to identifying people who are leaving.
-## - This is clearly shown in the confusion matrix, where, when predicting with the negative class, the model correctly classified 245 out of 247 cases. In contrast, the model correctly identified only 3 out of 48 positive class instances.
+## - This is clearly shown in the confusion matrix, where, when predicting with the negative class, the model correctly classified 245 out of 247 cases. In contrast, the model correctly identified only 4 out of 48 positive class instances.
 ## - Next, I will try to improve the model by using downsampling and upsampling methods when tuning and training the model.
 
 
@@ -773,21 +775,23 @@ set.seed(1853)
 rf_rec_1 <- recipe(Attrition ~ .,
                    data = hr_train) |>
   
-  ### Remove near-zero variance predictors
+  #### Remove near-zero variance predictors
   step_nzv(all_numeric_predictors()) |>
   
-  ### handle multicollinearity
+  #### handle multicollinearity
   step_corr(all_numeric_predictors(),
             threshold = 0.7) |>
   
-  ### Dummy encode categorical predictors
+  #### Dummy encode categorical predictors
   step_dummy(all_nominal_predictors()) |>
   
-  ### Downsampling
-  step_downsample(Attrition) |>
+  #### Upsample the positive class to 75% of the negative class
+  step_upsample(Attrition,
+                over_ratio = 0.75) |>
   
-  ### Oversampling
-  step_upsample(Attrition)
+  #### Downsample to 125% of the post-upsampled positive cass
+  step_downsample(Attrition,
+                  under_ratio = 1.25)
 
 
 ## Bundle model and recipe
@@ -822,8 +826,8 @@ rf_grid_1 <- grid_random(mtry(range = c(5, 10)),
 
 # Define tune metrics
 rf_metrics_1 <- metric_set(accuracy,
-                           recall,
                            precision,
+                           recall,
                            roc_auc)
 
 ## Tune the model
@@ -836,9 +840,6 @@ system.time({rf_tune_1 <- tune_grid(rf_wfl_1,
                                     resamples = rf_cv_1,
                                     grid = rf_grid_1,
                                     metrics = rf_metrics_1)})
-
-#    user  system elapsed 
-#   31.09    0.94  102.76
 
 
 ## Show the best hyperparametres
@@ -859,19 +860,26 @@ for (metric in metrics_1) {
   #### Print the results
   print(paste(metric, ":"))
   print(best)
-  print("----------------------------------------------")
+  print("------------------------------------------------------------------------")
 }
 
 
 ## Select the best hyperparametres
 rf_best_hp_1 <- select_best(rf_tune_1,
-                            metric = "precision")
+                            metric = "roc_auc")
 
 ## Apply the best hyperparametres
 rf_wfl_final_1 <- finalize_workflow(rf_wfl_1,
                                     rf_best_hp_1)
 
+
+
 ## Fit the model
+
+### Set seed for reproducibility
+set.seed(1853)
+
+### Fit
 rf_wkl_fit_1 <- last_fit(rf_wfl_final_1,
                          hr_split,
                          metrics = rf_metrics_1)
@@ -898,8 +906,8 @@ rf_conf_mat_1
 
 #            Truth
 # Prediction Yes  No
-#        Yes  31  55
-#        No   17 192
+#        Yes  14   7
+#        No   34 240
 
 
 ## Get metrics
@@ -913,26 +921,17 @@ rf_perf_results_1
 # # A tibble: 4 × 4
 #   .metric   .estimator .estimate .config             
 #   <chr>     <chr>          <dbl> <chr>               
-# 1 accuracy  binary         0.756 Preprocessor1_Model1
-# 2 recall    binary         0.646 Preprocessor1_Model1
-# 3 precision binary         0.360 Preprocessor1_Model1
-# 4 roc_auc   binary         0.775 Preprocessor1_Model1
+# 1 accuracy  binary         0.861 Preprocessor1_Model1
+# 2 precision binary         0.667 Preprocessor1_Model1
+# 3 recall    binary         0.292 Preprocessor1_Model1
+# 4 roc_auc   binary         0.771 Preprocessor1_Model1
 
-
-## Compute ROC AUC
-roc_auc(rf_predictions_1,
-        truth = Attrition,
-        .pred_Yes)
-
-# # A tibble: 1 × 3
-#   .metric .estimator .estimate
-#   <chr>   <chr>          <dbl>
-# 1 roc_auc binary         0.775
 
 ## Comments:
-##  - The downsampling and upsampling methods significantly improves the model's recall from 6% up to 64%.
-## - However, this comes at a cost to the other performance aspects.
-## - Specifically, accuracy decreased froom 84% to 75%, precision from 60% to 36%, and ROC AUC from 78% to 77%.
+##  - The downsampling and upsampling methods dramatically improves the model's recall from 6% up to 29%.
+## - Other performance metrics also demonstrated improvements.
+## - Specifically, accuracy increased by 2% from 84% to 86% and precision by 6% from 60% to 66%.
+## - Only ROC AUC exhibited a slight decrease from 78% to 77%.
 ## - While this is remarkable improvement, the model may be further ehanced by adjusting the prediction threshold.
 
 
@@ -1006,8 +1005,8 @@ for (i in 1:length(thresholds)) {
 
 ## Store the thresholds and corresponding values
 thres_results <- tibble(threshold = thresholds,
-                        recall = recalls,
                         precision = precisions,
+                        recall = recalls,
                         total = all,
                         flagged = all_positives,
                         true_pos = true_positives)
@@ -1016,58 +1015,30 @@ thres_results <- tibble(threshold = thresholds,
 thres_results
 
 # A tibble: 9 × 6
-#   threshold recall precision total flagged true_pos
-#       <dbl>  <dbl>     <dbl> <dbl>   <dbl>    <dbl>
-# 1       0.1 0.938      0.178   295     253       45
-# 2       0.2 0.771      0.274   295     135       37
-# 3       0.3 0.583      0.364   295      77       28
-# 4       0.4 0.417      0.606   295      33       20
-# 5       0.5 0.229      0.733   295      15       11
-# 6       0.6 0.104      0.714   295       7        5
-# 7       0.7 0.0417     0.667   295       3        2
-# 8       0.8 0         NA       295       0        0
-# 9       0.9 0         NA       295       0        0
-
-
-## Plot threshold vs recall and precision
-
-### Precision
-plot(thres_results$threshold,
-     thres_results$precision,
-     type = "b",
-     main = "Precision & Recall vs Threshold",
-     xlab = "Threshold",
-     ylab = "Score",
-     col = "blue",
-     pch = 16,
-     ylim = c(0, 1))
-
-### Recall
-lines(thres_results$threshold,
-      thres_results$recall,
-      type = "b",
-      col = "red",
-      pch = 17)
-
-### Add a legend
-legend("topright",
-       legend = c("Precision", "Recall"),
-       col = c("blue", "red"),
-       pch = c(16, 17),
-       lty = 1)
+#   threshold precision recall total flagged true_pos
+#       <dbl>     <dbl>  <dbl> <dbl>   <dbl>    <dbl>
+# 1       0.1     0.172 0.958    295     282       46
+# 2       0.2     0.246 0.854    295     192       41
+# 3       0.3     0.340 0.688    295     117       35
+# 4       0.4     0.575 0.479    295      59       26
+# 5       0.5     0.667 0.291    295      25       15
+# 6       0.6     0.8   0.167    295      12        9
+# 7       0.7     1     0.021    295       4        4
+# 8       0.8    NA     0        295       0        0
+# 9       0.9    NA     0        295       0        0
 
 
 ## Comments:
 ## - Although we are prioritising recall to identify potential leavers, a high recall means we will also incorrectly classify employees who are staying as leavers.
 ## - A high number of false positives, while beneficial for retaining the company's talent, could lead to additional costs as resources are allocated to employees who are staying, instead of those who are leaving.
 ## - As such, while we emphasize recall, this should not come at too great a cost to precision.
-## - Given this reasoning, I have chosen a threshold of 0.6, as it represents a good balance between recall and precision. Specifically, this threshold allows us to flag 37 employees out of 295, of which 20 are true positives.
-## - If we adjust the threshold to 0.5, we would flag about twice as many (86 employees), but less than half of them (31) would be true positives.
-## - With threshold of 0.6, the company would be able to identify a small yet concentrated number of employees who are likely to leave and will benefit from any invested intervention.
+## - Given this reasoning, I have chosen a threshold of 0.5, as it represents a good balance between recall and precision. Specifically, this threshold allows us to flag 21 employees out of 295, of which 14 are true positives.
+## - If we adjust the threshold to 0.4, we would flag about twice as many (40 employees), but less than half of them (23) would be true positives.
+## - With threshold of 0.5, the company would be able to identify a small yet concentrated number of employees who are likely to leave and will benefit from any invested intervention.
 
 
 ## Select the threshold
-selected_thres <- 0.6
+selected_thres <- 0.5
 
 
 ## Make poredictions with threshold = 0.6
@@ -1092,19 +1063,19 @@ summary(rf_final_conf_mat)
 # # A tibble: 13 × 3
 #   .metric               .estimator .estimate
 #   <chr>                 <chr>          <dbl>
-# 1 accuracy              binary         0.847
-# 2 kap                   binary         0.383
-# 3 sens                  binary         0.417
-# 4 spec                  binary         0.931
-# 5 ppv                   binary         0.541
-# 6 npv                   binary         0.891
-# 7 mcc                   binary         0.388
-# 8 j_index               binary         0.348
-# 9 bal_accuracy          binary         0.674
-# 10 detection_prevalence binary         0.125
-# 11 precision            binary         0.541
-# 12 recall               binary         0.417
-# 13 f_meas               binary         0.471
+# 1 accuracy              binary         0.861
+# 2 kap                   binary         0.340
+# 3 sens                  binary         0.292
+# 4 spec                  binary         0.972
+# 5 ppv                   binary         0.667
+# 6 npv                   binary         0.876
+# 7 mcc                   binary         0.378
+# 8 j_index               binary         0.263
+# 9 bal_accuracy          binary         0.632
+# 10 detection_prevalence binary         0.071
+# 11 precision            binary         0.667
+# 12 recall               binary         0.291
+# 13 f_meas               binary         0.405
 
 
 # ------------------------------------------------------
@@ -1128,7 +1099,7 @@ important_predictors <- c("MonthlyIncome",
                           "OverTime_Yes",
                           "Age",
                           "YearsWithCurrManager",
-                          "EnvironmentSatisfaction")
+                          "MaritalStatus_Single")
 
 ### For-loop through the vector
 for (predictor in important_predictors) {
@@ -1136,7 +1107,7 @@ for (predictor in important_predictors) {
   #### Plot the relationship between predictor and attrition
   pd <- partial(rf_final_model_1$fit,
                 pred.var = predictor,
-                train = juice(prep(rf_rec)))
+                train = juice(prep(rf_rec_1)))
   
   #### Print plot
   print(autoplot(pd) + ggtitle(predictor))
@@ -1158,11 +1129,11 @@ for (predictor in important_predictors) {
 ## (2) Overtime (yes)
 ## (3) Age
 ## (4) Years with current manager
-## (5) Environment satisfaction
+## (5) Marital status (single)
 
 
 ## Predictor 1. Monthly income
-## Relationship with attrition: resembling U shape
+## Relationship with attrition: resembling L shape
 ## - This predictor is also not surprising as employment is a transactional relationship.
 ## - If employees feel the financial return is not sufficient for their effort, they may leave in search of a more satisfying contract.
 
@@ -1174,7 +1145,7 @@ for (predictor in important_predictors) {
 
 
 ## Predictor 3. Age
-## Relationship with attrition: resembling L shape
+## Relationship with attrition: resembling U shape
 ## - The relationship between this predictor and attrition suggests that younger people are more likely to leave.
 ## - As they age, they become less likely to leave, up to a certain point.
 ## - After that, they become more likely to leave, but not as likely as their younger counterparts.
@@ -1187,10 +1158,17 @@ for (predictor in important_predictors) {
 ## - Second, years with current managers may reflect stagnation in the employees' career, which may, in turn, motivate employees to seek career growth elsewhere.
 
 
-## Predictor 5. Environment satisfaction
-## Relationship with attrition: resembling L shape
-## - This predictor is in line with the two-factor theory, which states that part of employees' motivation stems from the work environment.
-## - The direction of the relationship suggests that the less satisfied the employees are with their environment, the more likely they are to leave.
+## Predictor 5. Marital status (single)
+## Relationship with attrition: linear (positive)
+## - The relationship between marital status and attrition indicates that employees who are single are more likely to leave the company.
+## - There are two potential reasons for this result.
+## - One is that single employees may be less risk-averse compared to their married counterparts, as they often have fewer familial obligations (e.g., spouse or children). This may give them more freedom to pursue new job opportunities that married employees might perceive as too risky.
+## - The other reason is that without the emotional and practical support of a spouse or children, single employees may have fewer coping resources for managing work-related stress, making them more susceptible to leaving the company.
+
+
+
+## - Single employees may have fewer burdens than their married counterpart. Without family to support, these employees may have greater freedom to take more risky decisions like leaving their current positions in search of opportunities elsewhere.
+## - This may explain why single employees are more likely to leave the company.
 
 
 ## Recommendations based on the model
@@ -1210,5 +1188,6 @@ for (predictor in important_predictors) {
 ## Recommendation 1: Validate whether years with current managers are predictive of attrition. This may be done by selectively interviewing employees or reviewing additional employee data.
 ## Recommendation 2: If years with current managers reflect stagnation, communicate a clear career path to employees to ensure that they are aware of the opportunities for professional growth.
 
-## Predictor 5. Environmental satisfaction
-## Recommendation 1: The company may dive deeper into which environmental factors may discourage employees from staying. These may be physical (e.g., workspace, common areas), social (e.g., peers, supervisors), or a combination of both. By analysing which contextual factors contribute to attrition, the company has a greater chance of successfully tackling attrition.
+## Predictor 5. Marital status (single)
+## Recommendation 1: The company should consider paying special attention to single employees. If these individuals are more likely to leave due to being less risk-averse, the company might offer additional incentives to encourage retention. These incentives should aim to make staying with the company more appealing than seeking external opportunities. It is important, however, that such efforts be aligned with individual performance and other relevant factors.
+## Recommendation 2: The company may also consider offering targeted support to help single employees manage work-related stress. For instance, partnering with licensed psychologists to provide confidential counseling sessions could offer valuable support to any employees who choose to make use of this resource.
