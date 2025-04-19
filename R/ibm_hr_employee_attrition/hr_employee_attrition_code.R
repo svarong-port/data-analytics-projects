@@ -133,7 +133,7 @@ hr_cleaned |>
 
 #   Attrition Count Percent
 # 1       Yes   237   16.12
-# 2        No  1233   83.8
+# 2        No  1233   83.88
 
 ## Comment: The outcome has class imbalance where the positive class makes up around 1/5 of the observations.
 
@@ -634,10 +634,7 @@ rf_rec <- recipe(Attrition ~ .,
   
   ### handle multicollinearity
   step_corr(all_numeric_predictors(),
-            threshold = 0.7) |>
-  
-  ### Dummy encode categorical predictors
-  step_dummy(all_nominal_predictors())
+            threshold = 0.7)
 
 
 ## Bundle model and recipe
@@ -749,8 +746,8 @@ rf_conf_mat
 
 ##            Truth
 ## Prediction Yes  No
-##        Yes   4   2
-##        No   45 245
+##        Yes   5   2
+##        No   43 245
 
 
 ## Collect metrics
@@ -762,14 +759,14 @@ rf_perf_results
 ## A tibble: 4 × 4
 ##   .metric   .estimator .estimate .config             
 ##   <chr>     <chr>          <dbl>  <chr>               
-## 1 accuracy  binary         0.844  Preprocessor1_Model1
-## 2 precision binary         0.666 Preprocessor1_Model1
-## 3 recall    binary         0.083  Preprocessor1_Model1
-## 4 roc_auc   binary         0.782  Preprocessor1_Model1
+## 1 accuracy  binary         0.847  Preprocessor1_Model1
+## 2 precision binary         0.714  Preprocessor1_Model1
+## 3 recall    binary         0.104  Preprocessor1_Model1
+## 4 roc_auc   binary         0.785  Preprocessor1_Model1
 
 
 ## Comments:
-## - While this initial model shows relatively high accuracy (84%), its recall is extremely poor (8%).
+## - While this initial model shows relatively high accuracy (84%), its recall is extremely poor (10%).
 ## - This suggests that the model is very adept at correctly identifying people who are staying but performs poorly when it comes to identifying people who are leaving.
 ## - This is clearly shown in the confusion matrix, where, when predicting with the negative class, the model correctly classified 245 out of 247 cases. In contrast, the model correctly identified only 4 out of 48 positive class instances.
 ## - Next, I will try to improve the model by using downsampling and upsampling methods when tuning and training the model.
@@ -807,9 +804,6 @@ rf_rec_1 <- recipe(Attrition ~ .,
   #### handle multicollinearity
   step_corr(all_numeric_predictors(),
             threshold = 0.7) |>
-  
-  #### Dummy encode categorical predictors
-  step_dummy(all_nominal_predictors()) |>
   
   #### Upsample the positive class to 75% of the negative class
   step_upsample(Attrition,
@@ -960,11 +954,10 @@ rf_perf_results_1
 
 
 ## Comments:
-## - The downsampling and upsampling methods dramatically improves the model's recall from 6% up to 29%.
-## - Other performance metrics also demonstrated improvements.
-## - Specifically, accuracy increased by 2% from 84% to 86% and precision by 6% from 60% to 66%.
-## - Only ROC AUC exhibited a slight decrease from 78% to 77%.
-## - While this is remarkable improvement, the model may be further ehanced by adjusting the prediction threshold.
+## - The downsampling and upsampling methods dramatically improves the model's recall from 10% up to 29%.
+## - Accuracy also increased by 2% from 84% to 86%
+## However, these seem to come at cost as precision decreased by 5% from 71% to 66% and ROC AUC exhibited a slight decrease from 78% to 77%.
+## - While the overall improvement is encouraging, the model may be further ehanced by adjusting the prediction threshold.
 
 
 # ------------------------------------------------------
