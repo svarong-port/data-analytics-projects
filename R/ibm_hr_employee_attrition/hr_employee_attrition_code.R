@@ -1,14 +1,41 @@
 # HR Employee Attrition Analytics
 
-# Author: Shinin Varongchayakul
-# Date: 07 Apr 2025
+## Author: Shinin Varongchayakul
+## Date: 07 Apr 2025
+## Language: R
 
-# Dataset Info
-# Name: IBM HR Analytics Employee Attrition & Performance
-# Source: https://www.kaggle.com/datasets/pavansubhasht/ibm-hr-analytics-attrition-dataset
+## Dataset
+## Name: IBM HR Analytics Employee Attrition & Performance
+## Source: https://www.kaggle.com/datasets/pavansubhasht/ibm-hr-analytics-attrition-dataset
 
 
-# Install and load packages
+# ------------------------------------------------------
+
+
+## Business problem
+## - A company is experiencing employee attrition, losing key talents, productivity, and employee engagement.
+## - The company wants to understand factors related to attrition and how to predict attrition so that they may take steps to prevent their talents from leaving.
+## - I will use "IBM HR Analytics Emnployee Attrition & Performance" dataset from Kaggle to simulate the scenario.
+
+
+## Objectives of the Present Analysis
+## Given the business problem, the goals of the present analysis are twofolds:
+##  1. Explore the pattern of attrition in related to employee and job characteristics.
+## 2. Build a machine learning model to predict employee attrition.
+
+
+## Analysis Steps
+## 1. Install and load necessary packages
+## 2. Prepare the dataset
+## 3. Exploratory data analysis (EDA)
+## 4. Building a predictive model
+## 5. Summary and recommendations
+
+
+# ------------------------------------------------------
+
+
+## 1. Install and load packages
 
 ## Install
 install.packages("tidyverse") # data manipulation
@@ -19,7 +46,7 @@ install.packages("themis") # upsampling technique
 install.packages("vip") # feature importance in ML models
 install.packages("pdp") # plotting partial dependencies
 
-# Load
+## Load
 library(tidyverse)
 library(effsize)
 library(ggcorrplot)
@@ -32,7 +59,9 @@ library(pdp)
 # ------------------------------------------------------
 
 
-# Load the dataset
+## 2. Prepare the dataset
+
+## 2.1 Load and preview
 
 ## Load
 hr <- read.csv("hr_employee_attrition_dataset.csv")
@@ -44,91 +73,93 @@ head(hr)
 glimpse(hr)
 
 
-# ------------------------------------------------------
-
-
-# Explore and clean the data
+## 2.2 Explore and clean the data
 
 ## Convert categorical variables to factor
 
-### Define categorical variables
+## Define categorical variables
 cat_vars <- c("Attrition", "BusinessTravel", "Department",
               "Education", "EducationField", "Gender",
               "JobLevel", "JobRole", "MaritalStatus",
               "Over18", "OverTime", "StockOptionLevel")
 
-### Convert to factor
+## Convert to factor
 hr_cleaned <- hr |>
   
-  #### Mutate across
+  ### Mutate across
   mutate(across(all_of(cat_vars), as.factor))
 
-### Set attrition factor levels
+## Set attrition factor levels
 hr_cleaned$Attrition <- factor(hr_cleaned$Attrition,
                                levels = c("Yes", "No"))
 
-### Check the results
+## Check the results
 glimpse(hr_cleaned)
 
+## Comment: The categorical columns are successfully converted to `factor`.
 
-### Remove non-predictive variables
+
+## Remove non-predictive variables
 hr_cleaned <- hr_cleaned |>
   
-  #### Deselect
+  ## Deselect
   select(-EmployeeCount,
          -EmployeeNumber,
          -Over18)
 
-### Check the results
+## Check the results
 glimpse(hr_cleaned)
+
+## Comment: `EmployeeCount`, `EmployeeNumber`, and `Over18` are successfully removed.
 
 
 ## Handle missing values
 
-### Check for missing values
+## Check for missing values
 anyNA(hr_cleaned)
 
-### Comment: No missing values found
+## Comment: No missing values found
 
 
 ## Summarise the attrition rate
 hr_cleaned |>
   
-  ### Group and count by attrition
+  ## Group and count by attrition
   count(Attrition, 
         name = "Count") |>
   
-  ### Compute percentage
+  ## Compute percentage
   mutate(Percent = round(Count / sum(Count) * 100, 2))
 
 #   Attrition Count Percent
 # 1       Yes   237   16.12
 # 2        No  1233   83.8
 
-## Comments:
-## - There are quite fewer people who left than people who stayed.
+## Comment: The outcome has class imbalance where the positive class makes up around 1/5 of the observations.
 
 
 # ------------------------------------------------------
 
 
-# EDA, part 1
+## 3. EDA
+
+## 3.1 Part I – Overview
 
 ## Get an overview of the relationships in the data
 hr_cleaned |>
   
-  ### Encode attrition to numeric
+  ## Encode attrition to numeric
   mutate(AttritionEncoded = if_else(Attrition == "Yes",
                                     1,
                                     0)) |>
   
-  ### Select only numeric variables
+  ## Select only numeric variables
   select(where(is.numeric)) |>
   
-  ### Create a correlation matrix
+  ## Create a correlation matrix
   cor(use = "complete.obs") |>
   
-  ### Visualise the correlation matrix
+  ## Visualise the correlation matrix
   ggcorrplot(lab = TRUE,
              type = "lower",
              colors = c("blue", "white", "red"),
@@ -139,52 +170,47 @@ hr_cleaned |>
 ## - This suggests that attrition may be a result of a combination of several factors rather than any single factor alone.
 
 
-# ------------------------------------------------------
+## 3.2 Part II – The Three Likely Predictors
+
+## Explore 3 factors that are likely to contribute to attrition:
+## 1. Monlthy income: Employees may leave due to insufficient financial incentive, where lower income associated with higher attrition rate.
+## 2. Overtime: Employees may leave because of workload, where those with more overtime more likely to leave.
+## 3. Environment satisfaction: Those unsatisfied with their workplace conditions may be more likely to leave.
 
 
-# EDA, part 2
-
-# Explore 3 factors likely to affect attrition
-
-# The 3 factors:
-# 1. Monlthy income: employees may leave because of insufficient financial incentive, with lower income associated with higher attrition rate.
-# 2. Overtime: employees may leave because of workload, where those with more overtime more likely to leave.
-# 3. Environment satisfaction: those unsatisfied with their workplace settings may be more likely to leave.
-
-
-## 1. Monlthy income vs attrition
+## 3.2.1 Factor 1 – Monthly income
 hr_cleaned |>
   
-  ### Group by attrition
+  ## Group by attrition
   group_by(Attrition) |>
   
-  ### Summarise
+  ## Summarise
   summarise(AVGMonthlyIncome = mean(MonthlyIncome)) |>
   
-  ### Ungroup
+  ## Ungroup
   ungroup() |>
   
-  ### Aesthetic mapping
+  ## Aesthetic mapping
   ggplot(aes(x = Attrition,
              y = AVGMonthlyIncome,
              fill = Attrition)) +
   
-  ### Call bar plot
+  ## Call bar plot
   geom_col() +
   
-  ### Add text elements
+  ## Add text elements
   labs(title = "Monthly Income by Attrition",
        x = "Attrition Status",
        y = "Average Monthly Income",
        fill = "Attrition Status") +
   
-  ### Adjust x scale
+  ## Adjust x scale
   scale_x_discrete() +
   
-  ### Change theme to classic for easy viewing
+  ## Change theme to classic for easy viewing
   theme_classic()
 
-## Comment:
+## Comments:
 ## - On average, those who stayed appear to earn more than those who left.
 ## - This suggests that monthly income is a contributing factor to attrition.
 
@@ -192,28 +218,28 @@ hr_cleaned |>
 ## Check the distribution of monthly income
 hr_cleaned |>
   
-  ### Aesthetic mapping
+  ## Aesthetic mapping
   ggplot(aes(x = MonthlyIncome,
              fill = Attrition)) +
   
-  ### Call density plot
+  ## Call density plot
   geom_density(alpha = 0.5) +
   
-  ### Add text elements
+  ## Add text elements
   labs(title = "Monthly Income Distribution",
        x = "Monthly Income",
        fill = "Attrition Status") +
   
-  ### Change theme to classic for easy viewing
+  ## Change theme to classic for easy viewing
   theme_classic()
 
 ## Comments:
 ## - The distributions of both attrition groups are positively skewed.
-## - There were more proportionally more people who left in the lower end of the monthly income distribution.
+## - There are more proportionally more people who left in the lower end of the monthly income distribution.
 ## - This adds further support to the earlier analysis that monthly income is a contributor of attrition.
 
 
-## 2. Overtime vs attrition
+## 3.2.2 Factor 2 – Overtime
 hr_cleaned |>
   
   ### Group by overtime and attrition
@@ -256,82 +282,77 @@ hr_cleaned |>
 ## - In both overtime conditions, there were more people who stayed than who left.
 ## - The attrition rate was significantly higher in the overtime condition than in the no-overtime condition.
 ## - Conversely, the percentage of those who stayed was higher in no-overtime condition than in the overtime condition.
-## - This suggests that overtime contributes attrition.
+## - This suggests that overtime contributes to attrition.
 
 
-## 3. Environment satisfaction vs attrition
+## 3.2.3 Factor 3 – Environment satisfactionn
 hr_cleaned |>
   
-  ### Group by attrition
+  ## Group by attrition
   group_by(Attrition) |>
   
-  ### Compute mean environment satisfaction
+  ## Compute mean environment satisfaction
   summarise(AVGEnvSat = mean(EnvironmentSatisfaction)) |>
   
-  ### Ungroup
+  ## Ungroup
   ungroup() |>
   
-  ### Aesthetic mapping
+  ## Aesthetic mapping
   ggplot(aes(x = Attrition,
              y = AVGEnvSat,
              fill = Attrition)) +
   
-  ### Call bar plot
+  ## Call bar plot
   geom_col() +
   
-  ### Add text elements
+  ## Add text elements
   labs(title = "Environment Satisfaction vs Attrition",
        x = "Attrition Status",
        y = "Average Environment Satisfaction",
        fill = "Attrition Status") +
   
-  ### Adjust x scale
+  ## Adjust x scale
   scale_x_discrete() +
   
-  ### Change theme to classic for easy viewing
+  ## Change theme to classic for easy viewing
   theme_classic()
 
 
-### Conduct an independent t-test to test the difference
+## Comment: It is not clear whether there is a significant difference between the attrition groups.
+
+## Conduct an independent t-test to test the difference
 t.test(EnvironmentSatisfaction ~ Attrition,
        data = hr_cleaned)
 
-### Results:
-### t = 3.7513, df = 316.62, p-value = 0.0002092
-### sample estimates:
-### mean in group No mean in group Yes 
-### 2.771290          2.464135 
+## Results:
+## t = 3.7513, df = 316.62, p-value = 0.0002092
+## sample estimates:
+## mean in group No mean in group Yes 
+## 2.771290          2.464135 
 
-## Comments:
-## - There is a significant difference in environment satisfaction between the 2 attrition groups.
-## - Those who left tended to be less satisfied with the workplace settings than those who stayed.
-## - This suggests that environment satisfaction is likely a contributing factor to attrition.
-
-
-### Check the effect size
+## Check the effect size
 cohen.d(EnvironmentSatisfaction ~ Attrition,
         data = hr_cleaned)
 
-### Cohen's d
-### 
-### d estimate: 0.2824158 (small)
-### 95 percent confidence interval:
-###   lower     upper 
-### 0.1429148 0.4219167 
+## Results:
+## Cohen's d
+## 
+## d estimate: 0.2824158 (small)
+## 95 percent confidence interval:
+##   lower     upper 
+## 0.1429148 0.4219167 
 
 ## Comments:
-## - This suggests that the difference, while statistically significant, may not be as practically important as other factors such as monthly income and overtime.
-## - Thus, when tackling attrition, environment satisfaction may be given lower priority.
+## - While there is a statistically significant difference in environment satisfaction between the attrition groups (t = -3.75, p < .001), its magnitude is small.
+## - This suggests that while environment satisfaction may play a role in attrition, its influence may not be as importance as other factors such as monthly income and overtime.
 
 
 # ------------------------------------------------------
 
 
-# EDA, part 3
+## 3.3 Part III – Attrition by department & job role
 
-# Explore attrition patterns by department and job role
-
-## Attrition by department
+## 3.3.1 Attrition by department
 hr_cleaned |>
   
   ### Group by department and attrition
@@ -382,49 +403,49 @@ hr_cleaned |>
 ## - Additionally, Sales has the highest percentage of people leaving and lowest percetage of people staying. This suggests that the attrition may have the most impact in Sales.
 
 
-## Attrition by job role
+## 3.3.2 Attrition by job role
 hr_cleaned |>
   
-  ### Group by department and attrition
+  ## Group by department and attrition
   group_by(JobRole) |>
   
-  ### Count the number of observations
+  ## Count the number of observations
   summarise(AttritionRate = mean(Attrition == "Yes") * 100) |>
   
-  ### Ungroup
+  ## Ungroup
   ungroup() |>
   
-  ### Reorder job role levels
+  ## Reorder job role levels
   mutate(JobRole = fct_reorder(JobRole,
                                AttritionRate,
                                .desc = TRUE)) |>
   
-  ### Aesthetic mapping
+  ## Aesthetic mapping
   ggplot(aes(x = JobRole,
              y = AttritionRate,
              fill = JobRole)) +
   
-  ### Call on bar plot
+  ## Call on bar plot
   geom_col() +
   
-  ### Add percent text
+  ## Add percent text
   geom_text(aes(label = paste(round(AttritionRate, 0), "%")),
             vjust = -0.5,
             size = 3) +
   
-  ### Add text elements
+  ## Add text elements
   labs(title = "Attrition Rate by Job Role",
        x = "Job Roles",
        y = "Attrition Rate (%)",
        fill = "Job Roles") +
   
-  ### Adjust x scale
+  ## Adjust x scale
   scale_x_discrete() +
   
-  ### Adjust theme to classic for easy viewing
+  ## Adjust theme to classic for easy viewing
   theme_classic() +
   
-  ### Adjust text elements
+  ## Adjust text elements
   theme(axis.text.x = element_text(angle = 45,
                                    hjust = 1))
 
@@ -433,41 +454,42 @@ hr_cleaned |>
 ## - The Research Director role has the lowest percentage of attrition.
 ## - Given the job role titles, employees in lower job levels appear to leave more often.
 
-### Confirm whether job level is associated with attrition
+
+## Confirm whether job level is associated with attrition
 hr_cleaned |>
   
-  #### Group by job levels
+  ## Group by job levels
   group_by(JobLevel) |>
   
-  #### Compute attrition rate
+  ## Compute attrition rate
   summarise(AttritionRate = mean(Attrition == "Yes") * 100) |>
   
-  #### Ungroup
+  ## Ungroup
   ungroup() |>
   
-  #### Aesthetic mapping
+  ## Aesthetic mapping
   ggplot(aes(x = JobLevel,
              y = AttritionRate,
              fill = JobLevel)) +
   
-  #### Call on bar plot
+  ## Call on bar plot
   geom_col() +
   
-  #### Add percent text
+  ## Add percent text
   geom_text(aes(label = paste(round(AttritionRate, 0), "%")),
             vjust = -0.5,
             size = 3) +
   
-  #### Add text elements
+  ## Add text elements
   labs(title = "Attrition Rate by Job Level",
        x = "Job Levels",
        y = "Attrition Rate (%)",
        fill = "Job Levels") +
   
-  #### Adjust x scale
+  ## Adjust x scale
   scale_x_discrete() +
   
-  #### Adjust theme to classic for easy viewing
+  ## Adjust theme to classic for easy viewing
   theme_classic()
 
 ## Comments:
@@ -478,50 +500,48 @@ hr_cleaned |>
 # ------------------------------------------------------
 
 
-# EDA, part 4
+## 3.4 Part IV – Attrition by gender & age
 
-# Explore the attrition pattens by gender and age
-
-## Gender vs attrition
+## 3.4.1 Gender by gender
 hr_cleaned |>
   
-  ### Group by gender and attritiom
+  ## Group by gender and attritiom
   group_by(Gender, Attrition) |>
   
-  ### Count the number of observations
+  ## Count the number of observations
   summarise(Count = n(),
             .groups = "drop") |>
   
-  ### Group by gender
+  ## Group by gender
   mutate(Percent = Count / sum(Count) * 100) |>
   
-  ### Ungroup
+  ## Ungroup
   ungroup() |>
   
-  ### Aesthetic mapping
+  ## Aesthetic mapping
   ggplot(aes(x = Gender,
              y = Percent,
              fill = Attrition)) +
   
-  ### Call on bar plot
+  ## Call on bar plot
   geom_col(position = "dodge") +
   
-  ### Add percent text
+  ## Add percent text
   geom_text(aes(label = paste(round(Percent, 0), "%")),
             position = position_dodge(width = 0.9),
             vjust = -0.5,
             size = 3) +
   
-  ### Add text elements
+  ## Add text elements
   labs(title = "Attrition by Gender",
        x = "Gender",
        y = "Attrition Percentage",
        fill = "Attrition") +
   
-  ### Adjust x scale
+  ## Adjust x scale
   scale_x_discrete() +
   
-  ### Adjust theme to classic for easy viewing
+  ## Adjust theme to classic for easy viewing
   theme_classic()
 
 ## Comments:
@@ -530,24 +550,23 @@ hr_cleaned |>
 ## - Since the attrition patterns are similar across genders, this variable may contribute weakly to attrition.
 
 
-## Age vs attrition
-
+## 3.4.2 Attrition by age
 hr_cleaned |>
   
-  ### Aesthetic mapping
+  ## Aesthetic mapping
   ggplot(aes(x = Age,
              fill = Attrition)) +
   
-  ### Call on density plot
+  ## Call on density plot
   geom_density(alpha = 0.5) +
   
-  ### Add text elements
+  ## Add text elements
   labs(title = "Attrition by Age",
        x = "Age (Years)",
        y = "Employee Count",
        fill = "Attrition Status") +
   
-  ### Adjust theme to classic for easy viewing
+  ## Adjust theme to classic for easy viewing
   theme_classic()
 
 ## Comments:
@@ -561,43 +580,48 @@ hr_cleaned |>
 # ------------------------------------------------------
 
 
-# Predictive Modelling
+# 4. Building a predictive model
 
-# Questions:
-# - Can we predict attrition?
-# - If so, with how much accuracy?
-# - What are the five most important predictors in the model?
+## Guiding questions for this step:
+## 1. Can we predict attrition?
+## 2. If so, what is the accuracy of the model?
+## 3. What are the top five predictors of attrition?
 
-## Split the data
 
-### Set seed for reproducibility
+## 4.1 Split the data
+
+## Set seed for reproducibility
 set.seed(1853)
 
-### Define splitting index
+## Define splitting index
 hr_split <- initial_split(hr_cleaned,
                           prop = 0.8,
                           strata = Attrition)
 
-### Create a training set
+## Create a training set
 hr_train <- training(hr_split)
 
-### Create a training set
+## Create a training set
 hr_test <- testing(hr_split)
 
 
-## Instantiate a random forest model
-## This model is selected due to the balance betweem
-## accuracy and explainability
+## 4.2 Build a model
 
+## Here, I choose to build a random forest model because of its unique balance between accuracy and explainability.
+
+
+## 4.2.1 Tune the model
+
+## Instantiate a random forest model
 rf_model <- rand_forest(mtry = tune(),
                         min_n = tune(),
                         trees = 500) |>
   
-  ### Set engine
+  ## Set engine
   set_engine("ranger",
              importance = "permutation") |>
   
-  ### Set mode
+  ## Set mode
   set_mode("classification")
 
 
@@ -664,15 +688,17 @@ system.time({rf_tune <- tune_grid(rf_wfl,
                                   metrics = rf_metrics)})
 
 
+## 4.2.2 Finalise the model
+
 ## Show the best hyperparametres
 
-### Define the metrics
+## Define the metrics
 metrics <- c("accuracy",
              "precision",
              "recall",
              "roc_auc")
 
-### For-loop through the metrics
+## For-loop through the metrics
 for (metric in metrics) {
   
   ## Get best hyperparametres
@@ -685,6 +711,7 @@ for (metric in metrics) {
   print("------------------------------------------------------------------------")
 }
 
+## I will choose the best combination of hyperparameters based on recall, as we are working with an imbalanced dataset, where correctly identifying the positive class is more important than avoiding false positives.
 
 ## Select the best hyperparametres
 rf_best_hp <- select_best(rf_tune,
@@ -696,10 +723,10 @@ rf_wfl_final <- finalize_workflow(rf_wfl,
 
 ## Fit the model
 
-### Set seed for reproducibility
+## Set seed for reproducibility
 set.seed(1853)
 
-### Fit
+## Fit
 rf_wkl_fit <- last_fit(rf_wfl_final,
                        split = hr_split,
                        metrics = rf_metrics)
@@ -720,10 +747,10 @@ rf_conf_mat <- conf_mat(rf_predictions,
 ## Print the confusion matrix
 rf_conf_mat
 
-#            Truth
-# Prediction Yes  No
-#        Yes   4   2
-#        No   45 245
+##            Truth
+## Prediction Yes  No
+##        Yes   4   2
+##        No   45 245
 
 
 ## Collect metrics
@@ -732,13 +759,13 @@ rf_perf_results <- collect_metrics(rf_wkl_fit)
 ## Print metrics
 rf_perf_results
 
-# A tibble: 4 × 4
-#   .metric   .estimator .estimate .config             
-#   <chr>     <chr>          <dbl>  <chr>               
-# 1 accuracy  binary         0.844  Preprocessor1_Model1
-# 2 precision binary         0.666 Preprocessor1_Model1
-# 3 recall    binary         0.083  Preprocessor1_Model1
-# 4 roc_auc   binary         0.782  Preprocessor1_Model1
+## A tibble: 4 × 4
+##   .metric   .estimator .estimate .config             
+##   <chr>     <chr>          <dbl>  <chr>               
+## 1 accuracy  binary         0.844  Preprocessor1_Model1
+## 2 precision binary         0.666 Preprocessor1_Model1
+## 3 recall    binary         0.083  Preprocessor1_Model1
+## 4 roc_auc   binary         0.782  Preprocessor1_Model1
 
 
 ## Comments:
@@ -748,10 +775,9 @@ rf_perf_results
 ## - Next, I will try to improve the model by using downsampling and upsampling methods when tuning and training the model.
 
 
-# ------------------------------------------------------
+## 4.3 Retrain the model
 
-
-# Refit the model with upsampling step added
+## 4.3.1 Tune the model
 
 ## Instantiate a random forest model
 rf_model_1 <- rand_forest(mtry = tune(),
@@ -789,7 +815,7 @@ rf_rec_1 <- recipe(Attrition ~ .,
   step_upsample(Attrition,
                 over_ratio = 0.75) |>
   
-  #### Downsample to 125% of the post-upsampled positive cass
+  #### Downsample to 125% of the post-upsampled positive class
   step_downsample(Attrition,
                   under_ratio = 1.25)
 
@@ -806,25 +832,26 @@ rf_wfl_1 <- workflow() |>
 
 ## Define cross-validation
 
-### Set seed for reproducibility
+## Set seed for reproducibility
 set.seed(1853)
 
-### Set CV
+## Set CV
 rf_cv_1 <- vfold_cv(hr_train,
                     v = 10,
                     strata = Attrition)
 
+
 ## Define tune grid
 
-### Set seed for reproducibility
+## Set seed for reproducibility
 set.seed(1853)
 
-### Define the grid
+## Define the grid
 rf_grid_1 <- grid_random(mtry(range = c(5, 10)),
                          min_n(range = c(1, 25)),
                          size = 30)
 
-# Define tune metrics
+## Define tune metrics
 rf_metrics_1 <- metric_set(accuracy,
                            precision,
                            recall,
@@ -832,37 +859,41 @@ rf_metrics_1 <- metric_set(accuracy,
 
 ## Tune the model
 
-### Set seed for reproducibility
+## Set seed for reproducibility
 set.seed(1853)
 
-### Tune
+## Tune
 system.time({rf_tune_1 <- tune_grid(rf_wfl_1,
                                     resamples = rf_cv_1,
                                     grid = rf_grid_1,
                                     metrics = rf_metrics_1)})
 
 
+## 4.3.2 Finalise the model
+
 ## Show the best hyperparametres
 
-### Define the metrics
+## Define the metrics
 metrics_1 <- c("accuracy",
                "precision",
                "recall",
                "roc_auc")
 
-### For-loop through the metrics
+## For-loop through the metrics
 for (metric in metrics_1) {
   
-  #### Get best hyperparametres
+  ## Get best hyperparametres
   best <- show_best(rf_tune_1,
                     metric = metric)
   
-  #### Print the results
+  ## Print the results
   print(paste(metric, ":"))
   print(best)
   print("------------------------------------------------------------------------")
 }
 
+
+## Here, as class imbalance has been handled, I will choose the best hyperparametres based on precision, so the obtained model may be more adept at identifying true positive.
 
 ## Select the best hyperparametres
 rf_best_hp_1 <- select_best(rf_tune_1,
@@ -873,13 +904,14 @@ rf_wfl_final_1 <- finalize_workflow(rf_wfl_1,
                                     rf_best_hp_1)
 
 
+### 4.3.3 Evaluate the model performance
 
 ## Fit the model
 
-### Set seed for reproducibility
+## Set seed for reproducibility
 set.seed(1853)
 
-### Fit
+## Fit
 rf_wkl_fit_1 <- last_fit(rf_wfl_final_1,
                          hr_split,
                          metrics = rf_metrics_1)
@@ -887,48 +919,48 @@ rf_wkl_fit_1 <- last_fit(rf_wfl_final_1,
 
 ## Collect predictions
 
-### Collect predictions
+## Collect predictions
 rf_predictions_1 <- collect_predictions(rf_wkl_fit_1)
 
-### Print the results
+## Print the results
 head(rf_predictions_1)
 
 
 ## Create a confusion matrix
 
-### Create a confusion matrix
+## Create a confusion matrix
 rf_conf_mat_1 <- conf_mat(rf_predictions_1,
                           truth = Attrition,
                           estimate = .pred_class)
 
-### Print the confusion matrix
+## Print the confusion matrix
 rf_conf_mat_1
 
-#            Truth
-# Prediction Yes  No
-#        Yes  14   7
-#        No   34 240
+##            Truth
+## Prediction Yes  No
+##        Yes  14   7
+##        No   34 240
 
 
 ## Get metrics
 
-### Collect metrics
+## Collect metrics
 rf_perf_results_1 <- collect_metrics(rf_wkl_fit_1)
 
-### Print metrics
+## Print metrics
 rf_perf_results_1
 
-# # A tibble: 4 × 4
-#   .metric   .estimator .estimate .config             
-#   <chr>     <chr>          <dbl> <chr>               
-# 1 accuracy  binary         0.861 Preprocessor1_Model1
-# 2 precision binary         0.667 Preprocessor1_Model1
-# 3 recall    binary         0.292 Preprocessor1_Model1
-# 4 roc_auc   binary         0.771 Preprocessor1_Model1
+## # A tibble: 4 × 4
+##   .metric   .estimator .estimate .config             
+##   <chr>     <chr>          <dbl> <chr>               
+## 1 accuracy  binary         0.861 Preprocessor1_Model1
+## 2 precision binary         0.667 Preprocessor1_Model1
+## 3 recall    binary         0.292 Preprocessor1_Model1
+## 4 roc_auc   binary         0.771 Preprocessor1_Model1
 
 
 ## Comments:
-##  - The downsampling and upsampling methods dramatically improves the model's recall from 6% up to 29%.
+## - The downsampling and upsampling methods dramatically improves the model's recall from 6% up to 29%.
 ## - Other performance metrics also demonstrated improvements.
 ## - Specifically, accuracy increased by 2% from 84% to 86% and precision by 6% from 60% to 66%.
 ## - Only ROC AUC exhibited a slight decrease from 78% to 77%.
@@ -938,7 +970,9 @@ rf_perf_results_1
 # ------------------------------------------------------
 
 
-# Calibrate the model performance by adjust the threshold for predicting positive class
+## 4.4 Threshold Calibration
+
+## Calibrate the model performance by adjust the threshold for predicting positive class
 
 ## Define a set of threshold
 thresholds <- seq(0.1,
@@ -948,43 +982,43 @@ thresholds <- seq(0.1,
 
 ## Create empty vectors to store results from a for loop
 
-### Recall values
+## Recall values
 recalls <- numeric(length(thresholds))
 
-### Precision values
+## Precision values
 precisions <- numeric(length(thresholds))
 
-### The number of all cases
+## The number of all cases
 all <- numeric(length(thresholds))
 
-### The number of all positive classes
+## The number of all positive classes
 all_positives <- numeric(length(thresholds))
 
-### The number of true positives
+## The number of true positives
 true_positives <- numeric(length(thresholds))
 
 
 ## Create a for loop to loop through the thresholds
 for (i in 1:length(thresholds)) {
   
-  ### Make predictions with the threshold
+  ## Make predictions with the threshold
   new_pred <- if_else(rf_predictions_1$.pred_Yes > thresholds[i],
                       "Yes",
                       "No")
   
-  ### Create a tibble to store the results
+  ## Create a tibble to store the results
   predictions <- tibble(actual = hr_test$Attrition,
                         predicted = factor(new_pred, 
                                            levels = c("Yes", "No")))
   
-  ### Calculate recall
+  ## Calculate recall
   recalls[i] <- recall(predictions,
                        truth = actual,
                        estimate = predicted,
                        event_level = "first") |>
     pull(.estimate)
   
-  ### Calculate precision
+  ## Calculate precision
   precisions[i] <- precision(predictions,
                              truth = actual,
                              estimate = predicted,
@@ -992,15 +1026,14 @@ for (i in 1:length(thresholds)) {
     pull(.estimate)
   
   
-  ### Count all cases
+  ## Count all cases
   all[i] <- nrow(predictions)
   
-  ### Calculate all positive cases
+  ## Calculate all positive cases
   all_positives[i] <- sum(predictions$predicted == "Yes")
   
-  ### Calculate actual positive cases
+  ## Calculate actual positive cases
   true_positives[i] <- sum(predictions$predicted == "Yes" & predictions$actual == "Yes")
-  
 }
 
 ## Store the thresholds and corresponding values
@@ -1014,18 +1047,18 @@ thres_results <- tibble(threshold = thresholds,
 ## Print the for loop results
 thres_results
 
-# A tibble: 9 × 6
-#   threshold precision recall total flagged true_pos
-#       <dbl>     <dbl>  <dbl> <dbl>   <dbl>    <dbl>
-# 1       0.1     0.172 0.958    295     282       46
-# 2       0.2     0.246 0.854    295     192       41
-# 3       0.3     0.340 0.688    295     117       35
-# 4       0.4     0.575 0.479    295      59       26
-# 5       0.5     0.667 0.291    295      25       15
-# 6       0.6     0.8   0.167    295      12        9
-# 7       0.7     1     0.021    295       4        4
-# 8       0.8    NA     0        295       0        0
-# 9       0.9    NA     0        295       0        0
+## A tibble: 9 × 6
+##   threshold precision recall total flagged true_pos
+##       <dbl>     <dbl>  <dbl> <dbl>   <dbl>    <dbl>
+## 1       0.1     0.172 0.958    295     282       46
+## 2       0.2     0.246 0.854    295     192       41
+## 3       0.3     0.340 0.688    295     117       35
+## 4       0.4     0.575 0.479    295      59       26
+## 5       0.5     0.667 0.291    295      25       15
+## 6       0.6     0.8   0.167    295      12        9
+## 7       0.7     1     0.021    295       4        4
+## 8       0.8    NA     0        295       0        0
+## 9       0.9    NA     0        295       0        0
 
 
 ## Comments:
@@ -1036,6 +1069,8 @@ thres_results
 ## - If we adjust the threshold to 0.4, we would flag about twice as many (40 employees), but less than half of them (23) would be true positives.
 ## - With threshold of 0.5, the company would be able to identify a small yet concentrated number of employees who are likely to leave and will benefit from any invested intervention.
 
+
+## 4.5 Evaluate the Final Model
 
 ## Select the threshold
 selected_thres <- 0.5
@@ -1060,89 +1095,75 @@ rf_final_conf_mat <- conf_mat(rf_final_results,
 ## Get metrics
 summary(rf_final_conf_mat)
 
-# # A tibble: 13 × 3
-#   .metric               .estimator .estimate
-#   <chr>                 <chr>          <dbl>
-# 1 accuracy              binary         0.861
-# 2 kap                   binary         0.340
-# 3 sens                  binary         0.292
-# 4 spec                  binary         0.972
-# 5 ppv                   binary         0.667
-# 6 npv                   binary         0.876
-# 7 mcc                   binary         0.378
-# 8 j_index               binary         0.263
-# 9 bal_accuracy          binary         0.632
-# 10 detection_prevalence binary         0.071
-# 11 precision            binary         0.667
-# 12 recall               binary         0.291
-# 13 f_meas               binary         0.405
+## # A tibble: 13 × 3
+##   .metric               .estimator .estimate
+##   <chr>                 <chr>          <dbl>
+## 1 accuracy              binary         0.861
+## 2 kap                   binary         0.340
+## 3 sens                  binary         0.292
+## 4 spec                  binary         0.972
+## 5 ppv                   binary         0.667
+## 6 npv                   binary         0.876
+## 7 mcc                   binary         0.378
+## 8 j_index               binary         0.263
+## 9 bal_accuracy          binary         0.632
+## 10 detection_prevalence binary         0.071
+## 11 precision            binary         0.667
+## 12 recall               binary         0.291
+## 13 f_meas               binary         0.405
 
 
 # ------------------------------------------------------
 
 
-# Get variable importance and interpret the results
+## 4.6 Get variable importance
 
-## Get level of importance
-
-### Get final fit model
+## Get final fit model
 rf_final_model_1 <- extract_fit_parsnip(rf_wkl_fit_1)
 
-### Get levels of importance
+## Get levels of importance
 vip(rf_final_model_1)
 
 
 ## Get the directions of the relationships
 
-### Create a vector of 5 most important predictors
+## Create a vector of 5 most important predictors
 important_predictors <- c("MonthlyIncome",
                           "OverTime_Yes",
                           "Age",
                           "YearsWithCurrManager",
                           "MaritalStatus_Single")
 
-### For-loop through the vector
+## For-loop through the vector
 for (predictor in important_predictors) {
   
-  #### Plot the relationship between predictor and attrition
+  ## Plot the relationship between predictor and attrition
   pd <- partial(rf_final_model_1$fit,
                 pred.var = predictor,
                 train = juice(prep(rf_rec_1)))
   
-  #### Print plot
+  ## Print plot
   print(autoplot(pd) + ggtitle(predictor))
 }
 
 
-# ------------------------------------------------------
-
-
-## Comments:
-## - We can predict attrition with 86% accuracy.
-## - The model shows a balance between true positive and false positive rates as ROC AUC is 76%.
-## - Despite class imbalance in the outcome, The model demonstrates a good balance between recall and precision, with recall reported at around 41% and precision 60%.
-## - The model may be improved by providing more balanced dataset.
-
-
-## Based on the current model, the five most important predictors are:
-## (1) Monthly income
-## (2) Overtime (yes)
-## (3) Age
-## (4) Years with current manager
-## (5) Marital status (single)
-
+## Comments:  
+## Based on the random forest model, the top five predictors of attrition are:
+## 1. Monlthy income
+## 2. Overtime
+## 3. Age
+## 4. Years with current manager
+## 5. Marital status (single)
 
 ## Predictor 1. Monthly income
 ## Relationship with attrition: resembling L shape
 ## - This predictor is also not surprising as employment is a transactional relationship.
 ## - If employees feel the financial return is not sufficient for their effort, they may leave in search of a more satisfying contract.
 
-
 ## Predictor 2. Overtime (yes)
-## Relationship with attrition: linear (positive)
+##   Relationship with attrition: linear (positive)
 ## - This is not surprising, given that overtime may be associated with workload or lead employees to perceive their work as more demanding.
 ## - This, in turn, may lead to more work-related stress, which makes employees more likely to leave the company.
-
 
 ## Predictor 3. Age
 ## Relationship with attrition: resembling U shape
@@ -1150,15 +1171,13 @@ for (predictor in important_predictors) {
 ## - As they age, they become less likely to leave, up to a certain point.
 ## - After that, they become more likely to leave, but not as likely as their younger counterparts.
 
-
-## Predictor 4. Years with current manager
+## Predictor 4. Years with current manager 
 ## Relationship with attrition: resembling L shape
 ## - There are two ways to interpret this.
 ## - First, this predictor may not be the cause but a correlate of attrition, as people who leave early are likely to have fewer years with their managers.
 ## - Second, years with current managers may reflect stagnation in the employees' career, which may, in turn, motivate employees to seek career growth elsewhere.
 
-
-## Predictor 5. Marital status (single)
+## Predictor 5. Marital status (single) 
 ## Relationship with attrition: linear (positive)
 ## - The relationship between marital status and attrition indicates that employees who are single are more likely to leave the company.
 ## - There are two potential reasons for this result.
@@ -1167,26 +1186,68 @@ for (predictor in important_predictors) {
 
 
 
-## - Single employees may have fewer burdens than their married counterpart. Without family to support, these employees may have greater freedom to take more risky decisions like leaving their current positions in search of opportunities elsewhere.
-## - This may explain why single employees are more likely to leave the company.
+# ------------------------------------------------------
 
 
-## Recommendations based on the model
+## 5. Summary & recommendations
+
+## 5.1 Project recap
+## This project aimed to explore and predict employee attrition to aid a company in retaining their talents.
+## The project was successful in both regards.
+
+
+## 5.2 Exploring attrition
+
+## Overview  
+## I began exploring the relationships between attrition and the various factors by computing a correlation matrix. With this I found that attrition correlated very weakly, if any, to all numeric variables. This suggests that attrition may not be attributable to any single factor.
+
+## Deep-dive explorations  
+## Next, I focused the relationships between attrition and several factors which may predict it. The factors and corresponding attrition patterns are summarised below.
+
+## - Monthly income: Employees who left tended to earn more than those who stayed.
+## - Overtime: Employees who worked over time were more likely to leave than stay.
+## - Environment satisfaction: There was a small yet significant difference between employees who left versus stayed such that the former tended to be less satisfied with their work settings than the latter.
+## - Department: Sales experienced the highest percentage of attrition, and R&D the lowest.
+## - Job role & job level: Employees who left tended to be in the lower job levels and worked as Sale Reps.
+## - Gender: No difference in attrition rate between the two genders.
+## - Age: Among the younger employees, there were more people who left than stayed.
+
+
+## 5.3 Predicting attrition
+
+## I was able to build a predictive model using the random forest method.
+## The model demonstrated good accuracy (84%) and moderate precision (54%) and recall (41%).
+## The model also provided insights into the importance of each variable in the dataset. Specifically, it suggests that the top five predictors of attrition are:  
+## 1. Monthly income  
+## 2. Overtime (yes)  
+## 3. Age  
+## 4. Years with current manager  
+## 5. Environment satisfaction
+
+
+## 5.4 Recommendations
+
+## Based on the top five predictors from the model, I make the following business recommendations.
+
 
 ## Predictor 1. Monthly income
-## Recommendation 1: Consider the salary structure by balancing the incentive with the workload. This may be done in conjunction with recommendation 1 from predictor 1.
+## Recommdation 1: Consider the salary structure by balancing the incentive with the workload. This may be done in conjunction with recommendation 1 from predictor 2.
+
 
 ## Predictor 2. Overtime (yes)
-## Recommendation 1: Manage the workload by reviewing the company's overall workload and reallocating certain responsibilities, as well as cutting down on non-essential tasks to relieve employees of unnecessary workload.
-## Recommendation 2: Implement new technology or work procedures which may facilitate work processes, allowing employees to accomplish the same amount of work in less time. This is a win-win situation where the company enjoys the same level of productivity while the employees become happier.
+## Recommdation 1: Manage the workload by reviewing the company's overall workload and reallocating certain responsibilities, as well as cutting down on non-essential tasks to relieve employees of unnecessary workload.
+## Recommdation 2: Implement new technology or work procedures which may facilitate work processes, allowing employees to accomplish the same amount of work in less time. This is a win-win situation where the company enjoys the same level of productivity while the employees become happier.
+
 
 ## Predictor 3. Age
-## Recommendation 1: The company may investigate whether the company culture is a good fit for younger hires, given that younger employees are more likely to leave the company. If the culture is a contributor, the company may implement a plan to adjust certain aspects of the company culture to be more attractive to younger hires.
-## Recommendation 2: Regarding older employees, the company may also explore what factors are driving these employees away. This may be due to culture or other job or workplace characteristics, such as career path or promotion opportunities.
+## Recommdation 1: The company may investigate whether the company culture is a good fit for younger hires, given that younger employees are more likely to leave the company. If the culture is a contributor, the company may implement a plan to adjust certain aspects of the company culture to be more attractive to younger hires.
+## Recommdation 2: Regarding older employees, the company may also explore what factors are driving these employees away. This may be due to culture or other job or workplace characteristics, such as career path or promotion opportunities.
 
-## Predictor 4. Years with current managers
+
+## Predictor 4. Years with current manager
 ## Recommendation 1: Validate whether years with current managers are predictive of attrition. This may be done by selectively interviewing employees or reviewing additional employee data.
 ## Recommendation 2: If years with current managers reflect stagnation, communicate a clear career path to employees to ensure that they are aware of the opportunities for professional growth.
+
 
 ## Predictor 5. Marital status (single)
 ## Recommendation 1: The company should consider paying special attention to single employees. If these individuals are more likely to leave due to being less risk-averse, the company might offer additional incentives to encourage retention. These incentives should aim to make staying with the company more appealing than seeking external opportunities. It is important, however, that such efforts be aligned with individual performance and other relevant factors.
