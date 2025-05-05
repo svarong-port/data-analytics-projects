@@ -744,7 +744,7 @@ xgb_wfl_tune <- workflow() |>
   add_model(xgb_mod_tune)
 
 
-## 4.2.3 Define resampling method
+## 4.2.3 Define the resampling method
 
 ## Set seed for reproducibility
 set.seed(888)
@@ -769,7 +769,7 @@ set.seed(888)
 
 ## Create a random grid
 xgb_hp_grid <- grid_random(xgb_param_grid,
-                           size = 30)
+                           size = 10)
 
 
 ## 4.2.5 Tune the model
@@ -787,5 +787,39 @@ system.time({
 })
 
 
-## 4.2.6 Show best hyperparametres
+## 4.2.6 Get the best hyperparametres
+
+## Show the best hyperparametres
 show_best(xgb_tune_results)
+
+## Extract the best hyperaparametres
+xgb_best_hp <- select_best(xgb_tune_results,
+                           metric = "rmse")
+
+## Finalise the model with the best hyperparametres
+xgb_wfl_final <- finalize_workflow(xgb_wfl_tune,
+                                   xgb_best_hp)
+
+
+## 4.2.7 Refit the model      
+
+# Set seed for reproducibility
+set.seed(888)
+
+## Fit
+xgb_fit_final <- last_fit(xgb_wfl_final,
+                          avd_split,
+                          metrics = xgb_metrics)
+
+
+## 4.2.8 Evaluate the model
+
+# Collect metrics
+xgb_performance_final <- collect_metrics(xgb_fit_final)
+
+# Print the results
+xgb_performance_final
+
+## Comments
+## - The tuned model performed worse than the initial model across the three metrics.
+## - This is likely due to overfitting.
