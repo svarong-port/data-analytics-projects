@@ -718,14 +718,14 @@ xgb_performance
 ## - The model was able to account for about 64% of the avocado price variance.
 
 
-## 4.7 Tune the model
+## 4.2 Tune the model
 
-## 4.7.1 Define the hyperparametres for tuning
+## 4.2.1 Define the hyperparametres for tuning
 xgb_mod_tune <- boost_tree(trees = tune(),
                            tree_depth = tune(),
+                           mtry = tune(),
                            learn_rate = tune(),
-                           sample_size = tune(),
-                           loss_reduction = tune()) |>
+                           sample_size = tune()) |>
   
   ## Set engine
   set_engine("xgboost") |>
@@ -734,7 +734,7 @@ xgb_mod_tune <- boost_tree(trees = tune(),
   set_mode("regression")
 
 
-## 4.7.2 Bundle the recipe and the model
+## 4.2.2 Bundle the recipe and the model
 xgb_wfl_tune <- workflow() |>
   
   ## Add recipe
@@ -744,7 +744,7 @@ xgb_wfl_tune <- workflow() |>
   add_model(xgb_mod_tune)
 
 
-## 4.7.3 Define resampling method
+## 4.2.3 Define resampling method
 
 ## Set seed for reproducibility
 set.seed(888)
@@ -755,26 +755,24 @@ xgb_cv <- vfold_cv(avd_train,
                    strata = avg_price)
 
 
-## 4.7.4 Create a hyperparametre grid
+## 4.2.4 Create a hyperparametre grid
 
-## Define hyperparametre ranges
-xgb_hp <- parameters(trees() %>% range_set(c(100L, 1000L)),
-                     tree_depth() %>% range_set(c(3L, 10L)),
-                     learn_rate() %>% range_set(c(0.01, 0.3)),
-                     sample_prop() %>% range_set(c(0.5, 1.0)),
-                     loss_reduction() %>% range_set(c(0, 10)))
-
-## Define a random grid
+## Define hyperparametres ranges
+xgb_param_grid <- parameters(trees(range = c(100, 1000)),
+                             tree_depth(range = c(2, 10)),
+                             mtry(range = c(2, ncol(avd_train) - 1)),
+                             learn_rate(range = c(0.01, 0.3)),
+                             sample_prop(range = c(0.5, 1.0)))
 
 ## Set seed for reproducibility
 set.seed(888)
 
-## Define
-xgb_hp_grid <- grid_random(xgb_hp,
+## Create a random grid
+xgb_hp_grid <- grid_random(xgb_param_grid,
                            size = 30)
 
 
-## 4.7.5 Tune the model
+## 4.2.5 Tune the model
 
 ## Set seed for reproducibility
 set.seed(888)
@@ -787,3 +785,7 @@ system.time({
                                 metrics = xgb_metrics,
                                 verbose = 1)
 })
+
+
+## 4.2.6 Show best hyperparametres
+show_best(xgb_tune_results)
