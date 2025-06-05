@@ -31,7 +31,7 @@
 # Additional Info
 
 # SD-3 on Open-Source Psychometrics: https://openpsychometrics.org/tests/SD3/
-  
+
 # SD-3 Score Summary: https://openpsychometrics.org/tests/SD3/results.php
 
 
@@ -176,14 +176,30 @@ alpha(sd3_cleaned |>
 
 # Split the data
 
+# 4.1 Split the dataset
+
+# Set seed for reproducibility
+set.seed(42)
+
+# Define row index for EFA
+efa_rows <- sample(nrow(sd3_cleaned),
+                   nrow(sd3_cleaned) * 0.5)
+
+# Create dataset for EFA
+sd3_efa <- sd3_cleaned[efa_rows, ]
+
+# Create dataset for CFA
+sd3_cfa <- sd3_cleaned[-efa_rows, ]
+
+# Check the results
+cat("EFA dataset:", nrow(sd3_efa), "\n")
+cat("CFA dataset:", nrow(sd3_cfa), "\n")
 
 
-
-
-# 4.1 Exploratory Factor Analysis (EFA)
+# 4.2 Exploratory Factor Analysis (EFA)
 
 # Determine the number of factors
-fa.parallel(sd3_cleaned,
+fa.parallel(sd3_efa,
             fa = "fa",
             n.iter = 100,
             main = "Scree Plot for EFA")
@@ -193,7 +209,7 @@ fa.parallel(sd3_cleaned,
 # - The parallel method suggests a 9-factor solution.
 
 # Perform EFA with 3 factors
-efa_3 <- fa(sd3_cleaned,
+efa_3 <- fa(sd3_efa,
             nfactors = 3,
             rotate = "oblimin",
             fm = "ml")
@@ -204,7 +220,7 @@ print(efa_3,
       sort = TRUE)
 
 # Perform EFA with 9 factors
-efa_9 <- fa(sd3_cleaned,
+efa_9 <- fa(sd3_efa,
             nfactors = 9,
             rotate = "oblimin",
             fm = "ml")
@@ -213,3 +229,23 @@ efa_9 <- fa(sd3_cleaned,
 print(efa_9,
       cut = 0.3,
       sort = TRUE)
+
+
+# 4.3 Confirmatory Factor Analysis (CFA)
+
+# Define the items
+sd3_3fac <- "
+  Machiavellianism =~ M1 + M2 + M3 + M4 + M5 + M6 + M7 + M8 + M9
+  Narcissism       =~ N1 + N2 + N3 + N4 + N5 + N6 + N7 + N8 + N9
+  Psychopathy      =~ P1 + P2 + P3 + P4 + P5 + P6 + P7 + P8 + P9
+"
+
+# Perform CFA
+cfa_3fac <- cfa(sd3_3fac,
+                data = sd3_cfa,
+                estimator = "MLR")
+
+# Print the results
+summary(cfa_3fac,
+        fit.measures = TRUE,
+        standardized = TRUE)
