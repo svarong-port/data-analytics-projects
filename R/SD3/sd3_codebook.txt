@@ -14,21 +14,21 @@ M7	There are things you should hide from other people because they don’t need to
 M8	Make sure your plans benefit you, not others.
 M9	Most people can be manipulated.
 N1	People see me as a natural leader. 
-N2	I hate being the center of attention.
+N2	I hate being the center of attention. (R)
 N3	Many group activities tend to be dull without me.  
 N4	I know that I am special because everyone keeps telling me so. 
 N5	I like to get acquainted with important people. 
-N6	I feel embarrassed if someone compliments me.
+N6	I feel embarrassed if someone compliments me. (R)
 N7	I have been compared to famous people. 
-N8	I am an average person.
+N8	I am an average person. (R)
 N9	I insist on getting the respect I deserve.
 P1	I like to get revenge on authorities.
-P2	I avoid dangerous situations.
+P2	I avoid dangerous situations. (R)
 P3	Payback needs to be quick and nasty. 
 P4	People often say I’m out of control. 
 P5	It’s true that I can be mean to others. 
 P6	People who mess with me always regret it.
-P7	I have never gotten into trouble with the law.
+P7	I have never gotten into trouble with the law. (R)
 P8	I enjoy having sex with people I hardly know 
 P9	I’ll say anything to get what I want.
 
